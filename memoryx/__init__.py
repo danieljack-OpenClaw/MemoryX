@@ -13,9 +13,10 @@ MemoryX - 下一代 AI Agent 记忆系统
 - 增量备份
 - Web Dashboard
 - 云端同步
+- 快速自动化集成 (quick.py)
 """
 
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __author__ = "MemoryX Team"
 
 # 核心
@@ -46,6 +47,15 @@ from .openclaw_integration import (
     close
 )
 
+# 快速集成（每次回复自动调用）
+from .quick import (
+    quick_recall,
+    quick_record,
+    process as quick_process,
+    get_report as quick_get_report,
+    get_stats as quick_get_stats
+)
+
 __all__ = [
     # 核心
     "MemoryX",
@@ -68,5 +78,11 @@ __all__ = [
     "get_summary",
     "get_stats",
     "reset_stats",
-    "close"
+    "close",
+    # 快速集成
+    "quick_recall",
+    "quick_record",
+    "quick_process",
+    "quick_get_report",
+    "quick_get_stats"
 ]
