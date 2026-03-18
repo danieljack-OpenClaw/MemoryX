@@ -307,22 +307,22 @@ memory.evolve(agent_id="agent_456")
 
 ### Phase 1: 核心功能 (MVP)
 - [x] 项目初始化
-- [ ] 多层级记忆 CRUD
-- [ ] Token 压缩
-- [ ] 语义检索
-- [ ] 基础 API
+- [x] 多层级记忆 CRUD
+- [x] Token 压缩
+- [x] 语义检索
+- [x] 基础 API
 
 ### Phase 2: 高级功能
-- [ ] 技能进化引擎
-- [ ] 知识图谱
-- [ ] 多 Agent 支持
-- [ ] 自动备份
+- [x] 技能进化引擎
+- [x] 知识图谱
+- [x] 多 Agent 支持
+- [x] 自动备份
 
 ### Phase 3: 生态集成
-- [ ] OpenClaw 插件
-- [ ] Web Dashboard
-- [ ] 云端同步
-- [ ] 更多 Provider 支持
+- [x] OpenClaw 插件
+- [x] Web Dashboard
+- [x] 云端同步
+- [x] 更多 Provider 支持
 
 ---
 
