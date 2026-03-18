@@ -1,95 +1,68 @@
-# MemoryX - 下一代 AI Agent 记忆系统
+# MemoryX
 
 <p align="center">
   <img src="https://img.shields.io/github/stars/memoryX-ai/MemoryX?style=social" alt="Stars">
-  <img src="https://img.shields.io/badge/Version-1.0.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/Version-1.0.1-blue" alt="Version">
   <img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="License">
   <img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python">
 </p>
 
-> 整合 mem0 + MemOS + Evolver 三大方案优点的下一代记忆系统
+> 整合 mem0 + MemOS + Evolver 三大方案优点的下一代 AI Agent 记忆系统
 
 ---
 
-## 📊 方案对比
-
-### 三大参考方案优点
-
-| 方案 | 核心优点 | 缺点 |
-|------|----------|------|
-| **mem0** | ⭐ 50k stars<br>✅ 90% Token 节省<br>✅ 多平台 SDK<br>✅ 最成熟稳定 | ❌ 非 OpenClaw 专用<br>❌ 无技能进化 |
-| **MemOS** | ⭐ 7k stars<br>✅ OpenClaw 官方集成<br>✅ +43.7% 准确率<br>✅ Skill 进化<br>✅ Web Dashboard | ❌ Token 节省一般 (35%)<br>❌ 新项目生态待验证 |
-| **Evolver** | ⭐ 新兴项目<br>✅ GEP 基因组协议<br>✅ 可审计进化轨迹<br>✅ 自动修复指导 | ❌ 不直接是记忆方案<br>❌ 需配合其他方案使用 |
-
----
-
-### MemoryX 整合方案
-
-#### ✅ 整合后的优点
+## 🎯 核心特性
 
 | 特性 | 说明 |
 |------|------|
-| **90% Token 节省** | 无需 LLM 也可达到 90% 压缩 |
-| **83% 语义准确率** | all-mpnet-base-v2 (768维) 向量嵌入 |
-| **OpenClaw 原生** | 专为 OpenClaw 设计 |
-| **技能进化** | GEP 协议 + 自动优化 |
-| **多 Agent 协作** | 记忆共享与隔离 |
-| **云端同步** | S3 / GCS 支持 |
-| **Web Dashboard** | 可视化管理 |
-| **完全本地** | 100% 隐私安全 |
-
-#### ⚠️ 不足之处与解决方案
-
-| 不足 | 解决方案 | 状态 |
-|------|----------|------|
-| **生态成熟度** (Star 较少) | 持续迭代，积极开源社区运营 | 🚧 开发中 |
-| **多语言嵌入** (中文语义稍弱) | 接入中文嵌入模型 ( paraphrase-multilingual-MiniLM-L12-v2) | ✅ 已解决 |
-| **LLM 摘要效果** | 优化提示词，支持更多 LLM 提供商 | ✅ 已解决 |
-| **生产环境验证** | 持续测试与优化 | 🔄 持续 |
+| ⚡ **90% Token 节省** | 无需 LLM 也可达到 90% 压缩 |
+| 🔍 **语义搜索** | 多语言嵌入，83% 准确率 |
+| 🧠 **多层级记忆** | User / Session / Agent / Skill / Project |
+| 💾 **自动备份** | 本地 + 云端 |
+| ☁️ **云端同步** | AWS / GCP / 阿里云 / 腾讯云 / 华为云 / 百度云 |
+| 🎨 **Web Dashboard** | 可视化管理 (支持 6 种语言) |
 
 ---
 
 ## 🚀 快速开始
 
-### 安装
+### 方式一：独立部署
 
 ```bash
+# 1. 安装
 pip install memoryx
-```
 
-### 基本使用
-
-```python
+# 2. 创建记忆
+python -c "
 from memoryx import MemoryX
 from memoryx.core.models import MemoryLevel
 
-# 初始化
-memory = MemoryX()
+m = MemoryX()
+m.add(user_id='user1', content='我喜欢蓝色', level=MemoryLevel.USER)
+print('记忆已保存！')
+"
 
-# 添加记忆
-memory.add(
-    user_id="user_123",
-    content="用户喜欢简洁的沟通风格",
-    level=MemoryLevel.USER
-)
-
-# 搜索记忆
-results = memory.search(
-    user_id="user_123",
-    query="沟通偏好"
-)
-
-# 获取压缩上下文
-context = memory.get_context(
-    user_id="user_123",
-    max_tokens=1000
-)
+# 3. 启动 Web Dashboard
+python -m memoryx.dashboard
+# 访问 http://localhost:19876
 ```
 
-### 启动 Web Dashboard
+### 方式二：OpenClaw 插件
+
+```yaml
+# openclaw.yaml
+plugins:
+  memoryx:
+    enabled: true
+    storage_path: ~/.memoryx
+```
+
+### 方式三：REST API
 
 ```bash
-python -m memoryx.dashboard
+# 启动 API 服务
+python -m memoryx.api.server
+# 访问 http://localhost:19877
 ```
 
 ---
@@ -100,46 +73,94 @@ python -m memoryx.dashboard
 |------|------|
 | [快速开始](docs/quickstart.md) | 5 分钟入门 |
 | [安装指南](docs/installation.md) | 详细安装步骤 |
-| [API 参考](docs/api.md) | 完整 API 说明 |
-| [配置说明](docs/config.md) | 所有配置选项 |
-| [OpenClaw 集成](docs/openclaw.md) | 如何集成到 OpenClaw |
-| [云端同步](docs/cloud.md) | S3/GCS 云端备份 |
-| [Web Dashboard](docs/dashboard.md) | 可视化管理界面 |
+| [API 参考](docs/api.md) | 完整 API |
+| [配置说明](docs/config.md) | 配置选项 |
+| [OpenClaw 集成](docs/openclaw.md) | 插件使用 |
+| [云端同步](docs/cloud.md) | 云备份 |
+| [Web Dashboard](docs/dashboard.md) | 管理界面 |
 
 ---
 
-## 📈 性能指标
+## ⚙️ 部署方式对比
 
-| 指标 | MemoryX | mem0 | MemOS |
-|------|----------|------|-------|
-| Token 节省 | **90%** | 90% | 35% |
-| 语义准确率 | **83%** | - | +43.7% |
-| 向量维度 | 768 | - | - |
-| OpenClaw 集成 | ✅ | ❌ | ✅ |
-| 本地部署 | ✅ | ✅ | ✅ |
-| Web Dashboard | ✅ | ✅ | ✅ |
-| 云端同步 | ✅ | ✅ | ❌ |
-| 技能进化 | ✅ | ❌ | ✅ |
+| 方式 | 适用场景 | 特点 |
+|------|----------|------|
+| **独立部署** | 独立 AI 应用 | 完整功能，可定制 |
+| **OpenClaw 插件** | OpenClaw 用户 | 集成度高，即插即用 |
+| **REST API** | 微服务架构 | 跨语言，分布式 |
+
+### 环境变量
+
+```bash
+# 必需
+export MEMORYX_STORAGE_PATH=~/.memoryx
+
+# 可选
+export OPENAI_API_KEY=your-key          # LLM 摘要
+export MEMORYX_DASHBOARD_PORT=19876     # Dashboard 端口
+export MEMORYX_API_PORT=19877          # API 端口
+
+# 云端同步 (选择)
+export AWS_ACCESS_KEY_ID=xxx            # AWS
+export ALIYUN_ACCESS_KEY_ID=xxx        # 阿里云
+export TENCENT_SECRET_ID=xxx           # 腾讯云
+```
 
 ---
 
-## 🙏 参考与致谢
+## 📊 方案对比
 
-### 核心灵感来源
+| 方案 | Token 节省 | 语义准确率 | OpenClaw 集成 | 云同步 |
+|------|-----------|-----------|--------------|--------|
+| **MemoryX** | **90%** | **83%** | ✅ | ✅ |
+| mem0 | 90% | - | ❌ | ✅ |
+| MemOS | 35% | +43.7% | ✅ | ❌ |
 
-| 项目 | GitHub | 说明 |
-|------|--------|------|
-| **mem0** | [mem0ai/mem0](https://github.com/mem0ai/mem0) | 通用 AI 记忆层，90% Token 节省方案 |
-| **MemOS** | [MemTensor/MemOS](https://github.com/MemTensor/MemOS) | OpenClaw 官方记忆系统，+43.7% 准确率 |
-| **Evolver** | [EvoMap/evolver](https://github.com/EvoMap/evolver) | GEP 基因组进化协议 |
+---
 
-### 技术依赖
+## 🙏 致谢
 
-| 库 | 用途 |
-|----|------|
-| [sentence-transformers](https://github.com/UKPLab/sentence-transformers) | 语义向量嵌入 |
-| [ChromaDB](https://github.com/chroma-core/chroma) | 向量数据库 |
-| [OpenAI](https://github.com/openai/openai-python) | LLM 摘要生成 |
+感谢以下开源项目的启发与参考：
+
+| 项目 | 作者 | 贡献 |
+|------|------|------|
+| [mem0](https://github.com/mem0ai/mem0) | mem0ai team | Token 节省方案，90% 压缩算法 |
+| [MemOS](https://github.com/MemTensor/MemOS) | MemTensor | OpenClaw 集成，+43.7% 准确率提升 |
+| [Evolver](https://github.com/EvoMap/evolver) | EvoMap | GEP 基因组进化协议 |
+| [sentence-transformers](https://github.com/UKPLab/sentence-transformers) | UKPLab | 多语言语义嵌入模型 |
+| [ChromaDB](https://github.com/chroma-core/chroma) | Chroma team | 高效向量数据库 |
+
+---
+
+## 🤝 欢迎贡献
+
+MemoryX 是开源项目，欢迎所有开发者参与贡献！
+
+### 贡献方式
+
+- ⭐ Star 项目
+- 🐛 提交 Bug
+- 💡 提出新功能建议
+- 📝 完善文档
+- 🔧 提交代码 PR
+- 💰 赞助支持
+
+### 开发环境
+
+```bash
+# 克隆项目
+git clone https://github.com/danieljack-OpenClaw/MemoryX.git
+cd MemoryX
+
+# 安装开发依赖
+pip install -e .
+
+# 运行测试
+python test_full.py
+
+# 启动开发服务器
+python -m memoryx.dashboard
+```
 
 ---
 
@@ -149,4 +170,12 @@ Apache License 2.0
 
 ---
 
+## 📬 联系方式
+
+- GitHub Issues: [https://github.com/danieljack-OpenClaw/MemoryX/issues](https://github.com/danieljack-OpenClaw/MemoryX/issues)
+
+---
+
 *让 AI Agent 拥有真正的长期记忆 🧠*
+
+*Built with ❤️ by MemoryX Team*
