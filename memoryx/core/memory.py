@@ -59,8 +59,16 @@ class MemoryX:
         embedding = self.search_engine.encode(content)
         memory.embedding = embedding
         
-        # Save
+        # Save to storage
         self.storage.save(memory)
+        
+        # Add to search index
+        self.search_engine.add(
+            memory_id=memory.id,
+            embedding=embedding,
+            user_id=user_id,
+            level=level
+        )
         
         # Update knowledge graph
         self.graph.add_memory(memory)

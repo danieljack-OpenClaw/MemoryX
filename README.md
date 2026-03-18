@@ -63,6 +63,17 @@ context = memory.get_context(
 )
 ```
 
+## 📖 文档目录
+
+| 文档 | 说明 |
+|------|------|
+| [快速开始](docs/quickstart.md) | 5 分钟入门 |
+| [安装指南](docs/installation.md) | 详细安装步骤 |
+| [API 参考](docs/api.md) | 完整 API 说明 |
+| [配置说明](docs/config.md) | 所有配置选项 |
+| [OpenClaw 集成](docs/openclaw.md) | 如何集成到 OpenClaw |
+| [部署指南](docs/deployment.md) | 生产环境部署 |
+
 ## 🏗️ 系统架构
 
 ```
@@ -78,16 +89,6 @@ MemoryX
 ├── agent/           # 多 Agent
 └── api/            # REST API
 ```
-
-## 📖 文档目录
-
-- [安装指南](docs/installation.md)
-- [快速开始](docs/quickstart.md)
-- [API 参考](docs/api.md)
-- [配置说明](docs/config.md)
-- [OpenClaw 集成](docs/openclaw.md)
-- [部署指南](docs/deployment.md)
-- [故障排除](docs/troubleshooting.md)
 
 ## 🤝 贡献
 
