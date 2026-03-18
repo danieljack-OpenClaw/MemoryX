@@ -629,6 +629,82 @@ async def health():
     return {"status": "ok"}
 
 
+# Settings API for cloud configuration
+class CloudSettings(BaseModel):
+    cloud_enabled: bool = False
+    cloud_provider: str = ""
+    cloud_region: str = ""
+    cloud_bucket: str = ""
+
+
+class CloudTestRequest(BaseModel):
+    provider: str
+    region: str
+    access_key: str
+    secret_key: str
+    bucket: str
+
+
+def get_settings_path():
+    from memoryx.core.config import Config
+    cfg = Config()
+    return cfg.storage_path / "settings.json"
+
+
+def load_settings():
+    p = get_settings_path()
+    if p.exists():
+        import json
+        return json.loads(p.read_text(encoding='utf-8'))
+    return {"cloud_enabled": False, "cloud_provider": "", "cloud_region": "", "cloud_bucket": ""}
+
+
+def save_settings(data):
+    p = get_settings_path()
+    import json
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+
+@app.get("/api/settings")
+async def get_settings():
+    return load_settings()
+
+
+@app.post("/api/settings/cloud")
+async def save_cloud_settings(settings: CloudSettings):
+    data = load_settings()
+    data["cloud_enabled"] = settings.cloud_enabled
+    data["cloud_provider"] = settings.cloud_provider
+    data["cloud_region"] = settings.cloud_region
+    data["cloud_bucket"] = settings.cloud_bucket
+    save_settings(data)
+    return {"success": True}
+
+
+@app.post("/api/settings/cloud/test")
+async def test_cloud_connection(req: CloudTestRequest):
+    # Test cloud connection
+    try:
+        from memoryx.cloud import CloudSync
+        from memoryx.core.config import Config
+        config = Config()
+        cloud = CloudSync(config)
+        # Configure provider
+        if req.provider == "aliyun":
+            cloud.configure_provider("aliyun", {
+                "access_key_id": req.access_key,
+                "access_key_secret": req.secret_key,
+                "bucket": req.bucket,
+                "region": req.region
+            })
+        # Test connection
+        success = cloud.test_connection(req.provider)
+        return {"success": success}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 def run_dashboard(host: str = "0.0.0.0", port: int = None):
     """Run dashboard server
     

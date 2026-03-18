@@ -4,20 +4,41 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.0.2] - 2026-03-18
+
+### 新增
+- ☁️ **本地 + 云端双存储模式** (默认本地，可配置云端)
+- 🌐 Web Dashboard 云端存储配置 UI
+- 📡 Settings API (GET /api/settings, POST /api/settings/cloud)
+- 🔧 云厂商连接测试 API
+- 📖 云端配置文档 (cloud-config.md)
+
+### 优化
+- 默认端口: Dashboard 19876, API 19877
+
+---
+
 ## [1.0.1] - 2026-03-18
 
 ### 新增
 - 🌐 Web Dashboard 多语言支持 (简体中文/繁体中文/English/Español/Português/Deutsch)
-- ☁️ 云厂商反馈表单 (用户可提交希望支持的云厂商)
-- 🔧 端口配置支持 (MEMORYX_DASHBOARD_PORT / MEMORYX_API_PORT 环境变量)
+- ☁️ 云厂商反馈表单
+- 🔧 端口配置支持
 
 ### 优化
-- 默认端口调整 (Dashboard: 19876, API: 19877)
-- 国内云厂商支持 (阿里云/腾讯云/华为云/百度云)
+- 默认端口调整
 
 ---
 
 ## [1.0.0] - 2026-03-18
+
+### 新增
+- 🎉 初始版本发布
+- 🧠 多层级记忆系统
+- ⚡ 90% Token 压缩
+- 🔍 语义搜索
+- 💾 自动备份
+- ☁️ 云端同步 (6家厂商)
 
 ### 新增
 - 🎉 **初始版本发布**

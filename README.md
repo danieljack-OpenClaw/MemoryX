@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/stars/memoryX-ai/MemoryX?style=social" alt="Stars">
-  <img src="https://img.shields.io/badge/Version-1.0.1-blue" alt="Version">
+  <img src="https://img.shields.io/badge/Version-1.0.2-blue" alt="Version">
   <img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="License">
   <img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python">
 </p>
@@ -46,8 +46,8 @@ python -m memoryx.dashboard
 | 🔍 **语义搜索** | 83% 准确率 |
 | 🧠 **多层级记忆** | User/Session/Agent/Skill/Project |
 | 💾 **自动备份** | 本地 + 云端 |
-| ☁️ **云端同步** | AWS / GCP / 阿里云 / 腾讯云 / 华为云 / 百度云 |
-| 🎨 **Web Dashboard** | 6 种语言 |
+| ☁️ **本地+云端双存储** | 默认本地，可配置云端 |
+| 🎨 **Web Dashboard** | 6 种语言 + 云配置 |
 
 ---
 
