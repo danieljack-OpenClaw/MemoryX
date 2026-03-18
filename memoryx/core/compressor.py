@@ -7,8 +7,8 @@ import re
 from typing import List
 from dataclasses import dataclass
 
-from ..core.memory import Memory
-from ..core.config import Config
+from .models import Memory
+from .config import Config
 
 
 @dataclass

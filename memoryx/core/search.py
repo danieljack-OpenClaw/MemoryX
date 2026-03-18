@@ -6,7 +6,7 @@ MemoryX 语义搜索
 from typing import List, Dict, Optional
 import numpy as np
 
-from ..core.config import Config
+from .config import Config
 
 
 class SemanticSearch:

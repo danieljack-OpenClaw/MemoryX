@@ -7,8 +7,8 @@ from typing import List, Dict, Optional, Tuple
 from collections import defaultdict
 import re
 
-from ..core.memory import Memory
-from ..core.config import Config
+from .models import Memory
+from .config import Config
 
 
 class KnowledgeGraph:

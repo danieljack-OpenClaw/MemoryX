@@ -8,14 +8,14 @@ from pathlib import Path
 from typing import List, Optional, Dict
 from datetime import datetime
 
-from ..core.memory import Memory
-from ..core.config import Config
+from .models import Memory
+from .config import Config
 
 
 class StorageManager:
     """存储管理器 - SQLite + 文件系统"""
     
-    def __init__(self, config: Config):
+    def __init__(self, config):
         self.config = config
         self.storage_path = config.storage_path
         
@@ -42,12 +42,14 @@ class StorageManager:
                 embedding BLOB,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
-                expires_at TEXT,
-                INDEX idx_user_id (user_id),
-                INDEX idx_level (level),
-                INDEX idx_created (created_at)
+                expires_at TEXT
             )
         """)
+        
+        # 创建索引
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_id ON memories(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_level ON memories(level)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_created ON memories(created_at)")
         
         # Agent 表
         cursor.execute("""
@@ -90,7 +92,7 @@ class StorageManager:
         conn.commit()
         conn.close()
     
-    def save(self, memory: Memory):
+    def save(self, memory):
         """保存记忆"""
         conn = sqlite3.connect(str(self.db_path))
         cursor = conn.cursor()
@@ -114,7 +116,7 @@ class StorageManager:
         conn.commit()
         conn.close()
     
-    def get(self, memory_id: str) -> Optional[Memory]:
+    def get(self, memory_id: str):
         """获取记忆"""
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
@@ -140,7 +142,7 @@ class StorageManager:
         )
     
     def get_by_user(self, user_id: str, level: str = None, 
-                    agent_id: str = None, limit: int = 100) -> List[Memory]:
+                    agent_id: str = None, limit: int = 100):
         """获取用户的所有记忆"""
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
@@ -214,5 +216,4 @@ class StorageManager:
     
     def close(self):
         """关闭连接"""
-        # SQLite 自动管理
         pass
