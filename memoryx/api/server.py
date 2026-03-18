@@ -232,8 +232,16 @@ async def health_check():
 
 # ==== 运行服务 ====
 
-def run_server(host: str = "0.0.0.0", port: int = 8000):
-    """运行 API 服务"""
+def run_server(host: str = "0.0.0.0", port: int = None):
+    """运行 API 服务
+    
+    Args:
+        host: Host to bind to
+        port: Port to bind to (default: 19877, or from MEMORYX_API_PORT env)
+    """
+    import os
+    if port is None:
+        port = int(os.getenv("MEMORYX_API_PORT", "19877"))
     uvicorn.run(app, host=host, port=port)
 
 

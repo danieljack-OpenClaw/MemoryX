@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional, Dict, List
 from datetime import datetime
 
-from .config import Config
+from ..core.config import Config
 
 
 class CloudSync:

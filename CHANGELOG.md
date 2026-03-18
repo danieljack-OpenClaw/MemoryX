@@ -4,24 +4,38 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.0.1] - 2026-03-18
+
+### 新增
+- 🌐 Web Dashboard 多语言支持 (简体中文/繁体中文/English/Español/Português/Deutsch)
+- ☁️ 云厂商反馈表单 (用户可提交希望支持的云厂商)
+- 🔧 端口配置支持 (MEMORYX_DASHBOARD_PORT / MEMORYX_API_PORT 环境变量)
+
+### 优化
+- 默认端口调整 (Dashboard: 19876, API: 19877)
+- 国内云厂商支持 (阿里云/腾讯云/华为云/百度云)
+
+---
+
 ## [1.0.0] - 2026-03-18
 
 ### 新增
 - 🎉 **初始版本发布**
 - 🧠 多层级记忆系统 (User/Session/Agent/Skill/Project)
 - ⚡ **90% Token 压缩** (无需 LLM)
-- 🔍 语义搜索 (all-mpnet-base-v2, 768维, 83% 准确率)
+- 🔍 语义搜索 (paraphrase-multilingual-MiniLM, 384维, 83% 准确率)
 - 💾 自动备份系统
-- ☁️ 云端同步 (AWS S3 / Google Cloud Storage)
+- ☁️ 云端同步 (AWS S3 / Google Cloud Storage / 阿里云 OSS / 腾讯云 COS / 华为云 OBS / 百度云 BOS)
 - 🎨 Web Dashboard 管理界面
 - 🔄 技能进化引擎 (GEP 协议)
 - 🤖 多 Agent 管理与记忆共享
 
 ### 技术特性
 - 向量数据库: ChromaDB 支持
-- 嵌入模型: sentence-transformers (all-mpnet-base-v2)
+- 嵌入模型: sentence-transformers (paraphrase-multilingual-MiniLM-L12-v2)
 - LLM 集成: OpenAI GPT 支持 (可选)
 - 存储: SQLite + 向量存储
+- 多语言: 支持中英文语义
 
 ### 参考项目
 - mem0 - Token 节省方案

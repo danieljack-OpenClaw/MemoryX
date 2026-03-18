@@ -629,8 +629,20 @@ async def health():
     return {"status": "ok"}
 
 
-def run_dashboard(host: str = "0.0.0.0", port: int = 8080):
+def run_dashboard(host: str = "0.0.0.0", port: int = None):
+    """Run dashboard server
+    
+    Args:
+        host: Host to bind to
+        port: Port to bind to (default: 19876, or from MEMORYX_DASHBOARD_PORT env)
+    """
     import uvicorn
+    import os
+    
+    # Port priority: parameter > env > default
+    if port is None:
+        port = int(os.getenv("MEMORYX_DASHBOARD_PORT", "19876"))
+    
     uvicorn.run(app, host=host, port=port)
 
 
