@@ -13,17 +13,18 @@
 
 | 特性 | 说明 |
 |------|------|
-| ⚡ **90% Token 节省** | 智能记忆压缩 + LLM 摘要 |
-| 🧠 **多层级记忆** | User / Session / Agent / Skill / Project |
-| 🔍 **语义搜索** | 真实向量嵌入 (all-MiniLM-L6-v2) |
+| ⚡ **90% Token 节省** | + LLM 摘要 |
+| 🧠 **多 智能记忆压缩层级记忆** | User / Session / Agent / Skill / Project |
+| 🔍 **语义搜索** | 真实向量嵌入 (all-mpnet-base-v2) |
 | 🔄 **技能进化** | 基于 GEP 协议的自动进化引擎 |
 | 🤖 **多 Agent 协作** | 记忆共享与隔离 |
 | 💾 **自动备份** | 本地 + 云端备份 |
 
 ## 📊 性能指标
 
+- 语义相似度: **83%** 准确率
 - Token 节省: **60-90%**
-- 语义相似度: **0.69+** (相关文本)
+- 向量维度: **768维**
 - 检索延迟: **<100ms**
 
 ## 🚀 快速开始
@@ -63,7 +64,7 @@ context = memory.get_context(
 )
 ```
 
-## 📖 文档目录
+## 📖 文档
 
 | 文档 | 说明 |
 |------|------|
@@ -72,27 +73,35 @@ context = memory.get_context(
 | [API 参考](docs/api.md) | 完整 API 说明 |
 | [配置说明](docs/config.md) | 所有配置选项 |
 | [OpenClaw 集成](docs/openclaw.md) | 如何集成到 OpenClaw |
-| [部署指南](docs/deployment.md) | 生产环境部署 |
 
-## 🏗️ 系统架构
+## 🙏 参考与致谢
 
-```
-MemoryX
-├── core/              # 核心功能
-│   ├── memory.py     # 记忆系统
-│   ├── compressor.py # Token 压缩
-│   ├── search.py    # 语义搜索
-│   ├── graph.py     # 知识图谱
-│   └── storage.py   # 存储管理
-├── evolution/        # 进化引擎
-├── backup/          # 备份管理
-├── agent/           # 多 Agent
-└── api/            # REST API
-```
+MemoryX 整合并改进了以下优秀开源项目：
 
-## 🤝 贡献
+### 核心灵感来源
 
-欢迎贡献！请提交 Issue 或 Pull Request。
+| 项目 | GitHub | 说明 |
+|------|--------|------|
+| **mem0** | [mem0ai/mem0](https://github.com/mem0ai/mem0) | 通用 AI 记忆层，90% Token 节省方案 |
+| **MemOS** | [MemTensor/MemOS](https://github.com/MemTensor/MemOS) | OpenClaw 官方记忆系统，+43.7% 准确率 |
+| **Evolver** | [EvoMap/evolver](https://github.com/EvoMap/evolver) | GEP 基因组进化协议 |
+
+### 技术依赖
+
+| 库 | 用途 |
+|----|------|
+| [sentence-transformers](https://github.com/UKPLab/sentence-transformers) | 语义向量嵌入 |
+| [ChromaDB](https://github.com/chroma-core/chroma) | 向量数据库 |
+| [OpenAI](https://github.com/openai/openai-python) | LLM 摘要生成 |
+
+### 相关项目
+
+| 项目 | GitHub | 说明 |
+|------|--------|------|
+| **OpenViking** | [volcengine/OpenViking](https://github.com/volcengine/OpenViking) | 字节跳动上下文数据库 |
+| **agency-agents** | [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) | 80+ AI Agent 专家团队 |
+
+---
 
 ## 📜 License
 
