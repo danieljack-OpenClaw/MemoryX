@@ -1,0 +1,49 @@
+name: memoryx
+description: MemoryX - AI Agent 长期记忆系统，提供语义搜索和 Token 压缩
+version: 1.0.1
+author: MemoryX Team
+homepage: https://github.com/danieljack-OpenClaw/MemoryX
+
+trigger:
+  - memoryx
+  - 记住
+  - 记忆
+  - 保存
+  - 搜索
+
+capabilities:
+  memory:
+    description: 长期记忆存储与检索
+    actions:
+      - add
+      - search
+      - delete
+      - context
+  backup:
+    description: 自动备份
+    actions:
+      - backup
+      - restore
+
+config:
+  storage_path:
+    type: string
+    default: ~/.memoryx
+    description: 记忆存储路径
+  max_context_tokens:
+    type: number
+    default: 4000
+    description: 上下文最大 Token 数
+  auto_backup:
+    type: boolean
+    default: true
+    description: 自动备份开关
+  default_level:
+    type: string
+    default: user
+    description: 默认记忆层级
+
+examples:
+  - "记住我喜欢蓝色"
+  - "搜索颜色偏好"
+  - "获取记忆上下文"
