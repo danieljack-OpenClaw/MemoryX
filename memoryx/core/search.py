@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-MemoryX Enhanced Semantic Search with Better Embeddings
+MemoryX Enhanced Semantic Search with Multilingual Support
 """
 
 from typing import List, Dict
@@ -10,28 +10,35 @@ from .config import Config
 
 
 class SemanticSearch:
-    """Enhanced Semantic Search with optimized embeddings"""
+    """Enhanced Semantic Search with multilingual support"""
     
     def __init__(self, config: Config):
         self.config = config
-        self.embedding_dim = 384
+        self.embedding_dim = 768
         self._init_embedder()
         self._init_vector_db()
     
     def _init_embedder(self):
-        """Initialize optimized embedding model"""
+        """Initialize embedding model with multilingual support"""
         try:
             from sentence_transformers import SentenceTransformer
             
-            # Use a better model for semantic similarity
-            # all-mpnet-base-v2 has better performance than all-MiniLM-L6-v2
-            self.model = SentenceTransformer('all-mpnet-base-v2')
+            # Use multilingual model for better Chinese support
+            # paraphrase-multilingual-MiniLM-L12-v2 supports 50+ languages including Chinese
+            self.model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
             self.embedding_dim = self.model.get_sentence_embedding_dimension()
             self.use_real_embedding = True
-            print(f"[MemoryX] Using enhanced embeddings: all-mpnet-base-v2 (dim={self.embedding_dim})")
+            print(f"[MemoryX] Using multilingual embeddings: paraphrase-multilingual-MiniLM-L12-v2 (dim={self.embedding_dim})")
         except ImportError:
-            print("[MemoryX] sentence-transformers not installed, using fallback")
-            self.use_real_embedding = False
+            # Fallback to mpnet
+            try:
+                self.model = SentenceTransformer('all-mpnet-base-v2')
+                self.embedding_dim = self.model.get_sentence_embedding_dimension()
+                self.use_real_embedding = True
+                print(f"[MemoryX] Using enhanced embeddings: all-mpnet-base-v2 (dim={self.embedding_dim})")
+            except ImportError:
+                print("[MemoryX] sentence-transformers not installed, using fallback")
+                self.use_real_embedding = False
     
     def _init_vector_db(self):
         """Initialize vector database"""
@@ -66,17 +73,15 @@ class SemanticSearch:
         self.db_type = "memory"
     
     def encode(self, text: str) -> List[float]:
-        """Generate optimized text embedding"""
+        """Generate text embedding with multilingual support"""
         if self.use_real_embedding:
-            # Use mean pooling for better semantic representation
             embedding = self.model.encode(
                 text, 
                 convert_to_numpy=True,
-                normalize_embeddings=True  # Already normalized
+                normalize_embeddings=True
             )
             return embedding.tolist()
         else:
-            # Fallback
             return self._simple_embedding(text)
     
     def _simple_embedding(self, text: str) -> List[float]:
@@ -86,7 +91,6 @@ class SemanticSearch:
         vector = np.frombuffer(hash_val, dtype=np.float32)
         vector = vector / (np.linalg.norm(vector) + 1e-8)
         
-        # Pad to required dimension
         full_vector = np.zeros(self.embedding_dim, dtype=np.float32)
         full_vector[:len(vector)] = vector
         return full_vector.tolist()
@@ -109,7 +113,7 @@ class SemanticSearch:
     
     def search(self, query: str, user_id: str, level: str = None,
                agent_id: str = None, limit: int = 5) -> List[Dict]:
-        """Enhanced semantic search with re-ranking"""
+        """Semantic search"""
         query_embedding = self.encode(query)
         
         if self.db_type == "chroma":
@@ -124,13 +128,12 @@ class SemanticSearch:
         """ChromaDB search"""
         results = self.collection.query(
             query_embeddings=[query_embedding],
-            n_results=limit * 3,  # Get more for re-ranking
+            n_results=limit * 3,
             where={"user_id": user_id}
         )
         
         output = []
         for i, mem_id in enumerate(results["ids"][0]):
-            # Convert distance to similarity (cosine)
             score = 1 - results["distances"][0][i]
             output.append({
                 "id": mem_id,
@@ -138,7 +141,6 @@ class SemanticSearch:
                 "metadata": results["metadatas"][0][i]
             })
         
-        # Sort by score
         output.sort(key=lambda x: x["score"], reverse=True)
         return output[:limit]
     
@@ -155,7 +157,6 @@ class SemanticSearch:
             if level and data.get("level") != level:
                 continue
             
-            # Cosine similarity
             mem_vec = np.array(data["embedding"])
             similarity = float(np.dot(query_vec, mem_vec))
             

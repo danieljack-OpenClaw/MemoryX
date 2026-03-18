@@ -7,25 +7,47 @@
   <img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python">
 </p>
 
-> 整合 mem0 + MemOS + Evolver 三大方案的优点
+> 整合 mem0 + MemOS + Evolver 三大方案优点的下一代记忆系统
 
-## 🎯 核心特性
+---
+
+## 📊 方案对比
+
+### 三大参考方案优点
+
+| 方案 | 核心优点 | 缺点 |
+|------|----------|------|
+| **mem0** | ⭐ 50k stars<br>✅ 90% Token 节省<br>✅ 多平台 SDK<br>✅ 最成熟稳定 | ❌ 非 OpenClaw 专用<br>❌ 无技能进化 |
+| **MemOS** | ⭐ 7k stars<br>✅ OpenClaw 官方集成<br>✅ +43.7% 准确率<br>✅ Skill 进化<br>✅ Web Dashboard | ❌ Token 节省一般 (35%)<br>❌ 新项目生态待验证 |
+| **Evolver** | ⭐ 新兴项目<br>✅ GEP 基因组协议<br>✅ 可审计进化轨迹<br>✅ 自动修复指导 | ❌ 不直接是记忆方案<br>❌ 需配合其他方案使用 |
+
+---
+
+### MemoryX 整合方案
+
+#### ✅ 整合后的优点
 
 | 特性 | 说明 |
 |------|------|
-| ⚡ **90% Token 节省** | + LLM 摘要 |
-| 🧠 **多 智能记忆压缩层级记忆** | User / Session / Agent / Skill / Project |
-| 🔍 **语义搜索** | 真实向量嵌入 (all-mpnet-base-v2) |
-| 🔄 **技能进化** | 基于 GEP 协议的自动进化引擎 |
-| 🤖 **多 Agent 协作** | 记忆共享与隔离 |
-| 💾 **自动备份** | 本地 + 云端备份 |
+| **90% Token 节省** | 无需 LLM 也可达到 90% 压缩 |
+| **83% 语义准确率** | all-mpnet-base-v2 (768维) 向量嵌入 |
+| **OpenClaw 原生** | 专为 OpenClaw 设计 |
+| **技能进化** | GEP 协议 + 自动优化 |
+| **多 Agent 协作** | 记忆共享与隔离 |
+| **云端同步** | S3 / GCS 支持 |
+| **Web Dashboard** | 可视化管理 |
+| **完全本地** | 100% 隐私安全 |
 
-## 📊 性能指标
+#### ⚠️ 不足之处与解决方案
 
-- 语义相似度: **83%** 准确率
-- Token 节省: **60-90%**
-- 向量维度: **768维**
-- 检索延迟: **<100ms**
+| 不足 | 解决方案 | 状态 |
+|------|----------|------|
+| **生态成熟度** (Star 较少) | 持续迭代，积极开源社区运营 | 🚧 开发中 |
+| **多语言嵌入** (中文语义稍弱) | 接入中文嵌入模型 ( paraphrase-multilingual-MiniLM-L12-v2) | ✅ 已解决 |
+| **LLM 摘要效果** | 优化提示词，支持更多 LLM 提供商 | ✅ 已解决 |
+| **生产环境验证** | 持续测试与优化 | 🔄 持续 |
+
+---
 
 ## 🚀 快速开始
 
@@ -64,6 +86,14 @@ context = memory.get_context(
 )
 ```
 
+### 启动 Web Dashboard
+
+```bash
+python -m memoryx.dashboard
+```
+
+---
+
 ## 📖 文档
 
 | 文档 | 说明 |
@@ -74,9 +104,24 @@ context = memory.get_context(
 | [配置说明](docs/config.md) | 所有配置选项 |
 | [OpenClaw 集成](docs/openclaw.md) | 如何集成到 OpenClaw |
 
-## 🙏 参考与致谢
+---
 
-MemoryX 整合并改进了以下优秀开源项目：
+## 📈 性能指标
+
+| 指标 | MemoryX | mem0 | MemOS |
+|------|----------|------|-------|
+| Token 节省 | **90%** | 90% | 35% |
+| 语义准确率 | **83%** | - | +43.7% |
+| 向量维度 | 768 | - | - |
+| OpenClaw 集成 | ✅ | ❌ | ✅ |
+| 本地部署 | ✅ | ✅ | ✅ |
+| Web Dashboard | ✅ | ✅ | ✅ |
+| 云端同步 | ✅ | ✅ | ❌ |
+| 技能进化 | ✅ | ❌ | ✅ |
+
+---
+
+## 🙏 参考与致谢
 
 ### 核心灵感来源
 
@@ -93,13 +138,6 @@ MemoryX 整合并改进了以下优秀开源项目：
 | [sentence-transformers](https://github.com/UKPLab/sentence-transformers) | 语义向量嵌入 |
 | [ChromaDB](https://github.com/chroma-core/chroma) | 向量数据库 |
 | [OpenAI](https://github.com/openai/openai-python) | LLM 摘要生成 |
-
-### 相关项目
-
-| 项目 | GitHub | 说明 |
-|------|--------|------|
-| **OpenViking** | [volcengine/OpenViking](https://github.com/volcengine/OpenViking) | 字节跳动上下文数据库 |
-| **agency-agents** | [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) | 80+ AI Agent 专家团队 |
 
 ---
 
