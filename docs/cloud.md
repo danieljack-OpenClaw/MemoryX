@@ -1,12 +1,38 @@
-# MemoryX 云端同步指南
+# MemoryX 云端同步
 
-## 概述
+## 本地 + 云端双存储模式
 
-MemoryX 支持将数据同步到多种云端存储，实现跨设备数据共享和备份。
+MemoryX 支持**同时使用本地存储和云端存储**：
+
+- **默认**：本地存储 (`~/.memoryx/`)
+- **配置云端后**：自动同时保存到本地和云端
+
+### 工作原理
+
+```
+用户添加记忆
+    ↓
+同时写入:
+  ├─ 本地 SQLite (~/.memoryx/memoryx.db)
+  └─ 云端存储 (如果已配置)
+```
+
+### 配置文件
+
+配置保存在 `~/.memoryx/settings.json`:
+
+```json
+{
+  "cloud_enabled": true,
+  "cloud_provider": "aliyun",
+  "cloud_region": "cn-hangzhou",
+  "cloud_bucket": "my-memoryx"
+}
+```
+
+---
 
 ## 支持的云服务
-
-### ✅ 全部支持
 
 | 服务 | 前缀 | 说明 |
 |------|------|------|
@@ -19,168 +45,80 @@ MemoryX 支持将数据同步到多种云端存储，实现跨设备数据共享
 
 ---
 
-## AWS S3 配置
+## 快速配置 (Web Dashboard)
 
-### 环境变量
-
-```bash
-export AWS_ACCESS_KEY_ID=your_access_key
-export AWS_SECRET_ACCESS_KEY=your_secret_key
-export AWS_REGION=us-east-1
-```
-
-### 代码配置
-
-```python
-from memoryx.core.config import Config
-
-config = Config(
-    remote_backup_enabled=True,
-    remote_backup_path="s3://your-bucket/memoryx-backup"
-)
-```
+1. 访问 Dashboard (默认 http://localhost:19876)
+2. 进入「设置」标签
+3. 启用「云端存储」开关
+4. 选择云厂商
+5. 填写 Access Key、Secret Key、Bucket
+6. 点击「测试连接」
+7. 点击「保存」
 
 ---
 
-## Google Cloud Storage 配置
+## 环境变量配置
 
-### 环境变量
-
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-export GCS_PROJECT=your-project-id
-```
-
-### 代码配置
-
-```python
-config = Config(
-    remote_backup_path="gs://your-bucket/memoryx-backup"
-)
-```
-
----
-
-## 阿里云 OSS 配置
-
-### 环境变量
+### 阿里云 OSS
 
 ```bash
-export ALIYUN_ACCESS_KEY_ID=your_access_key
-export ALIYUN_ACCESS_KEY_SECRET=your_secret_key
+export ALIYUN_ACCESS_KEY_ID=your_key
+export ALIYUN_ACCESS_KEY_SECRET=your_secret
 ```
 
-### 代码配置
-
-```python
-config = Config(
-    remote_backup_path="oss://your-bucket/memoryx-backup"
-)
-```
-
----
-
-## 腾讯云 COS 配置
-
-### 环境变量
+### 腾讯云 COS
 
 ```bash
-export TENCENT_SECRET_ID=your_secret_id
-export TENCENT_SECRET_KEY=your_secret_key
-export TENCENT_REGION=ap-guangzhou
+export TENCENT_SECRET_ID=your_id
+export TENCENT_SECRET_KEY=your_secret
 ```
 
-### 代码配置
-
-```python
-config = Config(
-    remote_backup_path="cos://your-bucket"
-)
-```
-
----
-
-## 华为云 OBS 配置
-
-### 环境变量
+### AWS S3
 
 ```bash
-export HUAWEI_ACCESS_KEY_ID=your_access_key
-export HUAWEI_ACCESS_KEY_SECRET=your_secret_key
-export HUAWEI_REGION=cn-north-4
-```
-
-### 代码配置
-
-```python
-config = Config(
-    remote_backup_path="obs://your-bucket/memoryx"
-)
-```
-
----
-
-## 百度云 BOS 配置
-
-### 环境变量
-
-```bash
-export BAIDU_ACCESS_KEY_ID=your_access_key
-export BAIDU_ACCESS_KEY_SECRET=your_secret_key
-```
-
-### 代码配置
-
-```python
-config = Config(
-    remote_backup_path="bos://your-bucket/memoryx"
-)
+export AWS_ACCESS_KEY_ID=your_key
+export AWS_SECRET_ACCESS_KEY=your_secret
 ```
 
 ---
 
 ## 使用示例
 
-### 基本使用
+### 添加记忆 (自动双写)
 
 ```python
 from memoryx import MemoryX
 
-memory = MemoryX()
+memory = MemoryX()  # 自动同时保存到本地+云端
 
-# 同步到云端
-memory.backup(remote=True)
-
-# 或手动同步
-from memoryx.cloud import CloudSync
-
-cloud = CloudSync(config)
-cloud.sync_to_cloud()
+memory.add(
+    user_id="user1",
+    content="我喜欢蓝色",
+    level="user"
+)
 ```
 
-### 检查状态
+### 手动同步
 
 ```python
-cloud = CloudSync(config)
-status = cloud.get_status()
+from memoryx.core.storage import StorageManager
+from memoryx.core.config import Config
 
-for key, info in status['providers'].items():
-    print(f"{info['name']}: {'✓' if info['connected'] else '✗'}")
+storage = StorageManager(Config())
+storage.sync_all_to_cloud()
 ```
 
 ---
 
-## 自动同步
-
-### 配置自动备份
+## 检查状态
 
 ```python
-config = Config(
-    auto_backup=True,
-    backup_interval_hours=24,
-    remote_backup_enabled=True,
-    remote_backup_path="s3://your-bucket/memoryx"
-)
+from memoryx.cloud import CloudSync
+from memoryx.core.config import Config
+
+cloud = CloudSync(Config())
+status = cloud.get_status()
+print(status)
 ```
 
 ---
@@ -200,8 +138,3 @@ config = Config(
 - oss:PutObject
 - oss:GetObject
 - oss:ListBucket
-
-**腾讯云 COS**
-- cos:PutObject
-- cos:GetObject
-- cos:ListBucket

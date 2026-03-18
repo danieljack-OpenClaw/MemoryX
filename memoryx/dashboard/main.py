@@ -598,12 +598,12 @@ async def create_backup():
 @app.post("/api/cloud/sync")
 async def cloud_sync():
     from memoryx.core.config import Config
-    from memoryx.cloud import CloudSync
+    from memoryx.core.storage import StorageManager
     config = Config()
     try:
-        cloud = CloudSync(config)
-        success = cloud.sync_to_cloud()
-        return {"success": success}
+        storage = StorageManager(config)
+        result = storage.sync_all_to_cloud()
+        return result
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -684,20 +684,28 @@ async def save_cloud_settings(settings: CloudSettings):
 
 @app.post("/api/settings/cloud/test")
 async def test_cloud_connection(req: CloudTestRequest):
-    # Test cloud connection
     try:
         from memoryx.cloud import CloudSync
         from memoryx.core.config import Config
         config = Config()
         cloud = CloudSync(config)
+        
         # Configure provider
         if req.provider == "aliyun":
-            cloud.configure_provider("aliyun", {
+            cloud.bucket = req.bucket
+            cloud.current_provider = "aliyun"
+            cloud.oss_config = {
                 "access_key_id": req.access_key,
                 "access_key_secret": req.secret_key,
-                "bucket": req.bucket,
                 "region": req.region
-            })
+            }
+        elif req.provider == "tencent":
+            cloud.bucket = req.bucket
+            cloud.current_provider = "tencent"
+        elif req.provider == "aws":
+            cloud.bucket = req.bucket
+            cloud.current_provider = "aws"
+        
         # Test connection
         success = cloud.test_connection(req.provider)
         return {"success": success}

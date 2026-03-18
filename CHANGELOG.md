@@ -7,14 +7,18 @@ All notable changes to this project will be documented in this file.
 ## [1.0.2] - 2026-03-18
 
 ### 新增
-- ☁️ **本地 + 云端双存储模式** (默认本地，可配置云端)
+- ☁️ **本地+云端双存储模式** (核心功能)
+  - 默认本地存储
+  - 配置云端后自动双写
+  - 添加记忆时同时保存到本地和云端
 - 🌐 Web Dashboard 云端存储配置 UI
-- 📡 Settings API (GET /api/settings, POST /api/settings/cloud)
-- 🔧 云厂商连接测试 API
-- 📖 云端配置文档 (cloud-config.md)
+- 📡 Settings API
+- 🔧 云厂商连接测试
+- 📖 云端配置文档
 
 ### 优化
-- 默认端口: Dashboard 19876, API 19877
+- StorageManager 支持自动云同步
+- CloudSync 支持单记忆上传/下载
 
 ---
 

@@ -271,3 +271,115 @@ class CloudSync:
             "connected_providers": connected,
             "providers": providers
         }
+    
+    def upload_memory(self, memory) -> bool:
+        """上传单个记忆到云端"""
+        try:
+            # 内存转为JSON
+            data = {
+                "id": memory.id,
+                "user_id": memory.user_id,
+                "content": memory.content,
+                "level": memory.level,
+                "metadata": memory.metadata,
+                "created_at": memory.created_at,
+                "updated_at": memory.updated_at,
+                "expires_at": memory.expires_at
+            }
+            content = json.dumps(data, ensure_ascii=False)
+            
+            # 根据配置的云厂商上传
+            provider = getattr(self, 'current_provider', 'aliyun')
+            remote_path = f"memories/{memory.user_id}/{memory.id}.json"
+            
+            if provider == "aliyun" and self.oss_client:
+                self.oss_client.put_object(
+                    Bucket=self.bucket,
+                    Key=remote_path,
+                    Body=content.encode('utf-8')
+                )
+                return True
+            elif provider == "tencent" and self.cos_client:
+                self.cos_client.put_object(
+                    Bucket=self.bucket,
+                    Key=remote_path,
+                    Body=content.encode('utf-8')
+                )
+                return True
+            elif provider == "aws" and self.s3_client:
+                self.s3_client.put_object(
+                    Bucket=self.bucket,
+                    Key=remote_path,
+                    Body=content.encode('utf-8')
+                )
+                return True
+            
+            return False
+        except Exception as e:
+            print(f"Upload memory failed: {e}")
+            return False
+    
+    def download_memories(self, user_id: str = None) -> List:
+        """从云端下载记忆"""
+        memories = []
+        try:
+            provider = getattr(self, 'current_provider', 'aliyun')
+            
+            if provider == "aliyun" and self.oss_client:
+                # 列出所有对象
+                prefix = f"memories/{user_id}/" if user_id else "memories/"
+                result = self.oss_client.list_objects(Bucket=self.bucket, Prefix=prefix)
+                
+                if 'Contents' in result:
+                    for obj in result['Contents']:
+                        key = obj['Key']
+                        # 下载每个文件
+                        resp = self.oss_client.get_object(Bucket=self.bucket, Key=key)
+                        data = json.loads(resp['Body'].read().decode('utf-8'))
+                        memories.append(data)
+            
+            elif provider == "tencent" and self.cos_client:
+                prefix = f"memories/{user_id}/" if user_id else "memories/"
+                result = self.cos_client.list_objects(Bucket=self.bucket, Prefix=prefix)
+                
+                if 'Contents' in result:
+                    for obj in result['Contents']:
+                        key = obj['Key']
+                        resp = self.cos_client.get_object(Bucket=self.bucket, Key=key)
+                        data = json.loads(resp['Body'].read().decode('utf-8'))
+                        memories.append(data)
+            
+            elif provider == "aws" and self.s3_client:
+                prefix = f"memories/{user_id}/" if user_id else "memories/"
+                result = self.s3_client.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
+                
+                if 'Contents' in result:
+                    for obj in result['Contents']:
+                        key = obj['Key']
+                        resp = self.s3_client.get_object(Bucket=self.bucket, Key=key)
+                        data = json.loads(resp['Body'].read().decode('utf-8'))
+                        memories.append(data)
+            
+        except Exception as e:
+            print(f"Download memories failed: {e}")
+        
+        return memories
+    
+    def test_connection(self, provider: str = None) -> bool:
+        """测试云端连接"""
+        try:
+            p = provider or getattr(self, 'current_provider', 'aliyun')
+            
+            if p == "aliyun" and self.oss_client:
+                self.oss_client.head_bucket(Bucket=self.bucket)
+                return True
+            elif p == "tencent" and self.cos_client:
+                self.cos_client.head_bucket(Bucket=self.bucket)
+                return True
+            elif p == "aws" and self.s3_client:
+                self.s3_client.head_bucket(Bucket=self.bucket)
+                return True
+            
+            return False
+        except:
+            return False

@@ -1,5 +1,5 @@
 """
-MemoryX 存储管理
+MemoryX 存储管理 - 支持本地+云端双存储
 """
 
 import json
@@ -11,7 +11,7 @@ from dataclasses import asdict
 
 
 class StorageManager:
-    """存储管理器 - SQLite + 文件系统"""
+    """存储管理器 - SQLite + 文件系统 (本地+云端双模式)"""
     
     def __init__(self, config):
         self.config = config
@@ -23,6 +23,55 @@ class StorageManager:
         # 初始化数据库
         self.db_path = self.storage_path / "memoryx.db"
         self._init_db()
+        
+        # 加载云端配置
+        self._load_cloud_config()
+        
+        # 初始化云端存储
+        self._init_cloud()
+    
+    def _load_cloud_config(self):
+        """加载云端配置"""
+        import os
+        settings_file = self.storage_path / "settings.json"
+        self.cloud_enabled = False
+        self.cloud_provider = None
+        self.cloud_config = {}
+        
+        if settings_file.exists():
+            try:
+                data = json.loads(settings_file.read_text(encoding='utf-8'))
+                self.cloud_enabled = data.get("cloud_enabled", False)
+                self.cloud_provider = data.get("cloud_provider", "")
+                self.cloud_config = {
+                    "region": data.get("cloud_region", ""),
+                    "bucket": data.get("cloud_bucket", "")
+                }
+                # 从环境变量加载密钥
+                if self.cloud_provider == "aliyun":
+                    self.cloud_config["access_key_id"] = os.getenv("ALIYUN_ACCESS_KEY_ID", "")
+                    self.cloud_config["access_key_secret"] = os.getenv("ALIYUN_ACCESS_KEY_SECRET", "")
+                elif self.cloud_provider == "tencent":
+                    self.cloud_config["secret_id"] = os.getenv("TENCENT_SECRET_ID", "")
+                    self.cloud_config["secret_key"] = os.getenv("TENCENT_SECRET_KEY", "")
+                elif self.cloud_provider == "aws":
+                    self.cloud_config["access_key_id"] = os.getenv("AWS_ACCESS_KEY_ID", "")
+                    self.cloud_config["secret_access_key"] = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+            except:
+                pass
+    
+    def _init_cloud(self):
+        """初始化云端存储"""
+        self.cloud_client = None
+        if not self.cloud_enabled or not self.cloud_provider:
+            return
+        
+        try:
+            # 延迟导入，避免循环依赖
+            from ..cloud.sync import CloudSync
+            self.cloud_client = CloudSync(self.config)
+        except Exception as e:
+            print(f"Cloud init failed: {e}")
     
     def _init_db(self):
         """初始化数据库"""
@@ -91,7 +140,7 @@ class StorageManager:
         conn.close()
     
     def save(self, memory):
-        """保存记忆"""
+        """保存记忆 - 同时保存到本地和云端 (如果云端已启用)"""
         conn = sqlite3.connect(str(self.db_path))
         cursor = conn.cursor()
         
@@ -113,6 +162,46 @@ class StorageManager:
         
         conn.commit()
         conn.close()
+        
+        # 同时保存到云端 (如果启用)
+        if self.cloud_enabled and self.cloud_client:
+            try:
+                self._sync_to_cloud(memory)
+            except Exception as e:
+                print(f"Cloud sync error: {e}")
+    
+    def _sync_to_cloud(self, memory):
+        """同步单个记忆到云端"""
+        if not self.cloud_client:
+            return
+        try:
+            self.cloud_client.upload_memory(memory)
+        except Exception as e:
+            print(f"Cloud upload failed: {e}")
+    
+    def sync_all_to_cloud(self):
+        """同步所有记忆到云端"""
+        if not self.cloud_enabled or not self.cloud_client:
+            return {"success": False, "error": "Cloud not enabled"}
+        
+        try:
+            memories = self.get_all()
+            for memory in memories:
+                self._sync_to_cloud(memory)
+            return {"success": True, "count": len(memories)}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def load_from_cloud(self):
+        """从云端加载记忆"""
+        if not self.cloud_enabled or not self.cloud_client:
+            return []
+        
+        try:
+            return self.cloud_client.download_memories()
+        except Exception as e:
+            print(f"Cloud download failed: {e}")
+            return []
     
     def get(self, memory_id: str):
         """获取记忆"""
