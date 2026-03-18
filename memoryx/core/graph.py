@@ -1,197 +1,265 @@
+# -*- coding: utf-8 -*-
 """
-MemoryX 知识图谱
-用于关系推理和知识关联
+MemoryX 知识图谱模块
+实现向量 + 知识图谱混合存储和检索
 """
-
+import json
+import networkx as nx
+from pathlib import Path
+from datetime import datetime
 from typing import List, Dict, Optional, Tuple
-from collections import defaultdict
 import re
 
-from .models import Memory
-from .config import Config
 
-
-class KnowledgeGraph:
-    """知识图谱"""
+class GraphMemory:
+    """
+    知识图谱记忆模块
+    使用 NetworkX 构建内存知识图谱
+    """
     
-    def __init__(self, config: Config):
-        self.config = config
-        self.storage_path = config.storage_path / "graph"
+    def __init__(self, storage_path: str = None):
+        if storage_path is None:
+            from memoryx.core.config import Config
+            config = Config()
+            storage_path = str(config.storage_path / "graph")
+        elif hasattr(storage_path, 'storage_path'):
+            storage_path = str(storage_path.storage_path / "graph")
+        
+        self.storage_path = Path(storage_path)
         self.storage_path.mkdir(parents=True, exist_ok=True)
         
-        # 图数据结构
-        self.nodes = {}  # 实体
-        self.edges = []  # 关系
-        self._load()
+        self.graph = nx.DiGraph()
+        self._load_graph()
     
-    def _load(self):
-        """加载图数据"""
-        # 从文件加载
-        nodes_file = self.storage_path / "nodes.json"
-        edges_file = self.storage_path / "edges.json"
-        
-        if nodes_file.exists():
-            import json
-            with open(nodes_file) as f:
-                self.nodes = json.load(f)
-        
-        if edges_file.exists():
-            import json
-            with open(edges_file) as f:
-                self.edges = json.load(f)
+    def _get_graph_file(self) -> Path:
+        return self.storage_path / "knowledge_graph.json"
     
-    def _save(self):
-        """保存图数据"""
-        import json
-        
-        nodes_file = self.storage_path / "nodes.json"
-        edges_file = self.storage_path / "edges.json"
-        
-        with open(nodes_file, "w") as f:
-            json.dump(self.nodes, f, ensure_ascii=False, indent=2)
-        
-        with open(edges_file, "w") as f:
-            json.dump(self.edges, f, ensure_ascii=False, indent=2)
+    def _load_graph(self):
+        graph_file = self._get_graph_file()
+        if graph_file.exists():
+            try:
+                data = json.loads(graph_file.read_text(encoding='utf-8'))
+                if "nodes" in data and "edges" in data:
+                    self.graph.add_nodes_from(data["nodes"])
+                    self.graph.add_edges_from(data["edges"])
+            except:
+                pass
     
-    def add_memory(self, memory: Memory):
-        """从记忆中添加实体和关系"""
-        # 提取实体
-        entities = self._extract_entities(memory.content)
-        
-        # 添加实体
-        for entity in entities:
-            if entity not in self.nodes:
-                self.nodes[entity] = {
-                    "type": "entity",
-                    "mention_count": 0,
-                    "first_seen": memory.created_at,
-                    "last_seen": memory.created_at
-                }
-            else:
-                self.nodes[entity]["mention_count"] += 1
-                self.nodes[entity]["last_seen"] = memory.created_at
-        
-        # 添加关系 (基于共现)
-        for i, e1 in enumerate(entities):
-            for e2 in entities[i+1:]:
-                self._add_edge(e1, e2, memory.id)
-        
-        self._save()
+    def _save_graph(self):
+        graph_file = self._get_graph_file()
+        data = {
+            "nodes": list(self.graph.nodes(data=True)),
+            "edges": list(self.graph.edges(data=True)),
+            "saved_at": datetime.now().isoformat()
+        }
+        graph_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
     
-    def _extract_entities(self, text: str) -> List[str]:
-        """提取实体"""
-        # 简单实现: 提取大写开头的词和特定模式
-        # 实际可使用 NER
-        
-        entities = []
-        
-        # 提取大写开头的词
-        camel_words = re.findall(r'[A-Z][a-z]+(?=[A-Z]|\s|$)', text)
-        entities.extend(camel_words)
-        
-        # 提取引号中的内容
-        quoted = re.findall(r'"([^"]+)"', text)
-        entities.extend(quoted)
-        
-        # 提取特定模式: XX的XX
-        of_pattern = re.findall(r'([\u4e00-\u9fff]+)的([\u4e00-\u9fff]+)', text)
-        for p in of_pattern:
-            entities.extend(p)
-        
-        # 去重
-        return list(set(entities))
+    def add_node(self, node_id: str, node_type: str, content: str, metadata: dict = None) -> bool:
+        if self.graph.has_node(node_id):
+            return False
+        metadata = metadata or {}
+        self.graph.add_node(node_id, node_type=node_type, content=content, **metadata)
+        self._save_graph()
+        return True
     
-    def _add_edge(self, source: str, target: str, memory_id: str):
-        """添加边"""
-        # 查找是否已存在
-        for edge in self.edges:
-            if edge["source"] == source and edge["target"] == target:
-                edge["weight"] += 1
-                if memory_id not in edge["memory_ids"]:
-                    edge["memory_ids"].append(memory_id)
-                return
-        
-        # 新边
-        self.edges.append({
-            "source": source,
-            "target": target,
-            "weight": 1,
-            "memory_ids": [memory_id],
-            "type": "co_occurrence"
-        })
+    def add_edge(self, from_id: str, to_id: str, relation: str, weight: float = 1.0) -> bool:
+        if not self.graph.has_node(from_id) or not self.graph.has_node(to_id):
+            return False
+        self.graph.add_edge(from_id, to_id, relation=relation, weight=weight)
+        self._save_graph()
+        return True
     
-    def get_related(self, entity: str, depth: int = 1) -> List[Dict]:
-        """获取相关实体"""
+    def get_node(self, node_id: str) -> Optional[dict]:
+        if not self.graph.has_node(node_id):
+            return None
+        return dict(self.graph.nodes[node_id])
+    
+    def get_related_nodes(self, node_id: str, max_depth: int = 1) -> List[Tuple[str, dict]]:
+        if not self.graph.has_node(node_id):
+            return []
+        
         related = []
-        visited = {entity}
-        queue = [(entity, 0)]
+        visited = set()
         
-        while queue:
-            current, d = queue.pop(0)
-            
-            if d >= depth:
-                continue
-            
-            for edge in self.edges:
-                neighbor = None
-                if edge["source"] == current and edge["target"] not in visited:
-                    neighbor = edge["target"]
-                elif edge["target"] == current and edge["source"] not in visited:
-                    neighbor = edge["source"]
-                
-                if neighbor:
-                    related.append({
-                        "entity": neighbor,
-                        "relation": "co_occurs_with",
-                        "weight": edge["weight"],
-                        "distance": d + 1
-                    })
+        def dfs(current_id, depth):
+            if depth > max_depth:
+                return
+            for neighbor in self.graph.neighbors(current_id):
+                if neighbor not in visited:
                     visited.add(neighbor)
-                    queue.append((neighbor, d + 1))
+                    related.append((neighbor, dict(self.graph.nodes[neighbor])))
+                    dfs(neighbor, depth + 1)
         
+        visited.add(node_id)
+        dfs(node_id, 0)
         return related
     
-    def search_path(self, source: str, target: str) -> List[str]:
-        """查找两个实体之间的路径"""
-        # BFS
-        queue = [(source, [source])]
-        visited = {source}
-        
-        while queue:
-            current, path = queue.pop(0)
-            
-            if current == target:
-                return path
-            
-            for edge in self.edges:
-                neighbor = None
-                if edge["source"] == current and edge["target"] not in visited:
-                    neighbor = edge["target"]
-                elif edge["target"] == current and edge["source"] not in visited:
-                    neighbor = edge["source"]
-                
-                if neighbor:
-                    visited.add(neighbor)
-                    queue.append((neighbor, path + [neighbor]))
-        
-        return []
+    def find_path(self, from_id: str, to_id: str) -> List[str]:
+        if not self.graph.has_node(from_id) or not self.graph.has_node(to_id):
+            return []
+        try:
+            return nx.shortest_path(self.graph, from_id, to_id)
+        except:
+            return []
     
-    def query(self, question: str) -> Dict:
-        """知识问答"""
-        # 简单实现: 提取问题中的实体并返回相关知识
-        entities = self._extract_entities(question)
+    def extract_entities(self, text: str) -> List[Dict]:
+        entities = []
         
-        results = {}
+        names = re.findall(r'[\u4e00-\u9fa5]{2,4}(?:先生|女士|老板|总|哥|姐|爷)', text)
+        for name in names:
+            entities.append({"id": f"person_{name}", "name": name, "type": "person"})
+        
+        companies = re.findall(r'(?:公司|企业|集团)([\u4e00-\u9fa5]+)', text)
+        for company in companies:
+            entities.append({"id": f"company_{company}", "name": f"{company}公司", "type": "organization"})
+        
+        projects = re.findall(r'([\u4e00-\u9fa5]+(?:项目|业务|产品|平台))', text)
+        for project in projects:
+            entities.append({"id": f"project_{project}", "name": project, "type": "project"})
+        
+        return entities
+    
+    def add_memory_to_graph(self, memory_id: str, content: str, level: str = "user"):
+        self.add_node(
+            node_id=f"memory_{memory_id}",
+            node_type="memory",
+            content=content,
+            metadata={"level": level, "created_at": datetime.now().isoformat()}
+        )
+        
+        entities = self.extract_entities(content)
         for entity in entities:
-            if entity in self.nodes:
-                related = self.get_related(entity)
-                results[entity] = {
-                    "info": self.nodes[entity],
-                    "related": related
-                }
+            self.add_node(
+                node_id=entity["id"],
+                node_type=entity["type"],
+                content=entity["name"]
+            )
+            self.add_edge(
+                from_id=entity["id"],
+                to_id=f"memory_{memory_id}",
+                relation="mentioned_in"
+            )
+    
+    def add_memory(self, memory) -> bool:
+        """兼容旧接口"""
+        try:
+            memory_id = memory.id if hasattr(memory, 'id') else str(memory)
+            content = memory.content if hasattr(memory, 'content') else str(memory)
+            level = memory.level.value if hasattr(memory, 'level') else 'user'
+            self.add_memory_to_graph(memory_id, content, level)
+            return True
+        except:
+            return False
+    
+    def query_by_entity(self, entity_name: str) -> List[Dict]:
+        matching_entities = [
+            node for node in self.graph.nodes()
+            if entity_name in str(node) or (
+                self.graph.nodes[node].get("content", "") and 
+                entity_name in self.graph.nodes[node].get("content", "")
+            )
+        ]
         
+        results = []
+        for entity_id in matching_entities:
+            related = self.get_related_nodes(entity_id)
+            for related_id, related_data in related:
+                if related_id.startswith("memory_"):
+                    results.append({
+                        "memory_id": related_id.replace("memory_", ""),
+                        "entity": entity_name,
+                        "content": related_data.get("content", "")
+                    })
         return results
     
+    def get_graph_stats(self) -> dict:
+        types = {}
+        for node, data in self.graph.nodes(data=True):
+            node_type = data.get("node_type", "unknown")
+            types[node_type] = types.get(node_type, 0) + 1
+        
+        rel_types = {}
+        for u, v, data in self.graph.edges(data=True):
+            relation = data.get("relation", "unknown")
+            rel_types[relation] = rel_types.get(relation, 0) + 1
+        
+        return {
+            "total_nodes": self.graph.number_of_nodes(),
+            "total_edges": self.graph.number_of_edges(),
+            "node_types": types,
+            "relation_types": rel_types
+        }
+    
+    def clear(self):
+        self.graph.clear()
+        self._save_graph()
+    
     def close(self):
-        """关闭"""
-        self._save()
+        """关闭连接"""
+        pass  # NetworkX 不需要关闭
+
+
+class HybridSearch:
+    """向量 + 图谱混合检索"""
+    
+    def __init__(self, memoryx=None, graph_memory=None):
+        self.memoryx = memoryx
+        self.graph_memory = graph_memory or GraphMemory()
+    
+    def search(self, query: str, user_id: str, limit: int = 5) -> List[dict]:
+        results = []
+        
+        if self.memoryx:
+            vector_results = self.memoryx.search(user_id=user_id, query=query, limit=limit * 2)
+            results.extend([{"source": "vector", **r} for r in vector_results])
+        
+        entities = self.graph_memory.extract_entities(query)
+        for entity in entities:
+            graph_results = self.graph_memory.query_by_entity(entity["name"])
+            results.extend([{"source": "graph", **r} for r in graph_results])
+        
+        seen = set()
+        unique_results = []
+        for r in results:
+            rid = r.get("id") or r.get("memory_id")
+            if rid and rid not in seen:
+                seen.add(rid)
+                unique_results.append(r)
+        
+        return unique_results[:limit]
+    
+    def rerank_by_graph(self, results: List[dict], query: str) -> List[dict]:
+        if not results:
+            return results
+        
+        query_entities = self.graph_memory.extract_entities(query)
+        
+        for result in results:
+            graph_score = 0
+            content = result.get("content", "")
+            
+            for entity in query_entities:
+                if entity["name"] in content:
+                    graph_score += 1
+                
+                result_id = result.get("id") or result.get("memory_id", "")
+                path = self.graph_memory.find_path(entity["id"], f"memory_{result_id}")
+                if path:
+                    graph_score += len(path) * 0.5
+            
+            result["graph_score"] = graph_score
+            result["hybrid_score"] = result.get("score", 0) * 0.7 + graph_score * 0.3
+        
+        results.sort(key=lambda x: x.get("hybrid_score", 0), reverse=True)
+        return results
+
+
+# 兼容旧名称
+KnowledgeGraph = GraphMemory
+
+
+__all__ = [
+    "GraphMemory",
+    "HybridSearch",
+    "KnowledgeGraph"
+]
