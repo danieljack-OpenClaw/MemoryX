@@ -2,9 +2,9 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/stars/memoryX-ai/MemoryX?style=social" alt="Stars">
+  <img src="https://img.shields.io/badge/Version-1.0.0-blue" alt="Version">
   <img src="https://img.shields.io/badge/License-Apache%202.0-green" alt="License">
   <img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python">
-  <img src="https://img.shields.io/badge/Version-0.1.0-blue" alt="Version">
 </p>
 
 > 整合 mem0 + MemOS + Evolver 三大方案的优点
