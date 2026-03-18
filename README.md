@@ -103,6 +103,8 @@ python -m memoryx.dashboard
 | [API 参考](docs/api.md) | 完整 API 说明 |
 | [配置说明](docs/config.md) | 所有配置选项 |
 | [OpenClaw 集成](docs/openclaw.md) | 如何集成到 OpenClaw |
+| [云端同步](docs/cloud.md) | S3/GCS 云端备份 |
+| [Web Dashboard](docs/dashboard.md) | 可视化管理界面 |
 
 ---
 
