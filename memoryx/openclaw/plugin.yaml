@@ -1,0 +1,95 @@
+name: memoryx
+description: MemoryX - 下一代 AI Agent 记忆系统，集成 mem0 + MemOS + Evolver 的优点
+version: 0.1.0
+homepage: https://github.com/memoryX-ai/MemoryX
+author: MemoryX Team
+license: Apache-2.0
+
+keywords:
+  - memory
+  - long-term-memory
+  - ai-agent
+  - openclaw
+  - mem0
+  - MemOS
+  - evolver
+
+trigger:
+  - memoryx
+  - 记忆
+  - long-term
+
+metadata:
+  memoryx:
+    category: ai-tools
+    api_base: http://localhost:8000
+
+capabilities:
+  memory:
+    description: 长期记忆存储与检索
+    actions:
+      - add_memory
+      - search_memory
+      - get_memory
+      - delete_memory
+      - update_memory
+  context:
+    description: 上下文压缩
+    actions:
+      - get_context
+  evolution:
+    description: 技能进化
+    actions:
+      - evolve
+      - get_evolution_history
+  backup:
+    description: 自动备份
+    actions:
+      - create_backup
+      - restore_backup
+      - list_backups
+
+environment:
+  MEMORYX_API_KEY:
+    required: false
+    description: MemoryX API 密钥 (云端模式需要)
+  MEMORYX_MODE:
+    default: local
+    description: 运行模式 (local/cloud)
+  MEMORYX_STORAGE_PATH:
+    default: ~/.memoryx
+    description: 本地存储路径
+  MEMORYX_LLM_PROVIDER:
+    default: openai
+    description: LLM 提供商
+
+installation:
+  pip: pip install memoryx
+  config: |
+    # MemoryX 配置示例
+    
+    # 方式 1: 使用 OpenClaw 配置
+    plugins:
+      memoryx:
+        enabled: true
+        mode: local  # local 或 cloud
+        storage_path: ~/.memoryx
+        
+        # Token 压缩配置
+        compression:
+          enabled: true
+          max_tokens: 4000
+        
+        # 自动备份
+        backup:
+          enabled: true
+          interval_hours: 24
+        
+        # 技能进化
+        evolution:
+          enabled: true
+          interval_hours: 168
+    
+    # 方式 2: 使用环境变量
+    # export MEMORYX_API_KEY=your-key
+    # export MEMORYX_MODE=cloud
