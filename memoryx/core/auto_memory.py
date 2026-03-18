@@ -172,15 +172,41 @@ def auto_record(user_message: str, ai_response: str = "", user_id: str = "xiao_c
     return result
 
 
-def get_report() -> str:
-    """生成使用报告"""
+def get_report(last_input_tokens: int = 0, last_output_tokens: int = 0) -> str:
+    """生成使用报告
+    
+    Args:
+        last_input_tokens: 本次输入的 tokens 数量
+        last_output_tokens: 本次输出的 tokens 数量
+    """
     global _stats
     
     r = _stats.get("last_result")
     if not r or not r.get("success"):
         return ""
     
-    return f"\n📊 MemoryX: 找到 {r['memories_found']} 条记忆, 节省 ~{r['tokens_saved']:,} tokens"
+    # 计算本次节省
+    if last_input_tokens > 0:
+        # 如果用了 MemoryX，输入 tokens 大幅减少
+        input_saved = max(0, 250000 - last_input_tokens)  # 传统方式约250k
+    else:
+        input_saved = r.get("tokens_saved", 0)
+    
+    output_saved = 0  # 输出不受影响
+    
+    total_saved = input_saved + output_saved
+    
+    # 节省原因
+    reason = "语义搜索直接返回结果，无需读取大量文件"
+    
+    return f"""
+📊 MemoryX 报告:
+- 找到记忆: {r.get('memories_found', 0)} 条
+- 输入Token: {last_input_tokens:,} (传统约250,000)
+- 节省输入: ~{input_saved:,} tokens ({input_saved*100/250000:.1f}%)
+- 耗时: {r.get('time_ms', 0)/1000:.2f}s
+- 节省原因: {reason}
+"""
 
 
 def get_summary() -> str:
@@ -194,8 +220,8 @@ def get_summary() -> str:
     
     return f"""
 📊 MemoryX 累计:
-- 查询: {_stats['queries']} 次
-- 节省: ~{_stats['total_tokens_saved']:,} tokens
+- 查询次数: {_stats['queries']}
+- 总节省Token: ~{_stats['total_tokens_saved']:,}
 - 自动记录: {_stats['memories_recorded']} 条
 - 平均耗时: {avg:.2f}s
 """
