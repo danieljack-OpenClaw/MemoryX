@@ -113,21 +113,22 @@ memory.backup(remote=True)  # 云端备份
 python -m memoryx.dashboard
 ```
 
-访问 http://localhost:8080
+访问 http://localhost:19876
 
 功能：
 - 📊 统计面板
 - 📚 记忆管理
 - ➕ 添加记忆
 - 🔍 语义搜索
-- 💾 备份管理
-- ⚙️ 系统设置
+- 💾 备份同步
+- ☁️ 云端存储配置 (本地+云端双模式)
+- 🌍 多语言支持 (6种)
 
 ### 3. REST API
 
 ```bash
-# 启动 API
-python -m memoryx.api.server --port 8000
+# 启动 API (端口 19877)
+python -m memoryx.api.server
 ```
 
 API 端点：
@@ -140,7 +141,9 @@ API 端点：
 | POST | /api/memory/search | 语义搜索 |
 | DELETE | /api/memory/{id} | 删除记忆 |
 | POST | /api/backup | 创建备份 |
-| GET | /api/backup | 备份列表 |
+| POST | /api/cloud/sync | 云端同步 |
+| GET | /api/settings | 获取设置 |
+| POST | /api/settings/cloud | 保存云配置 |
 
 ---
 
@@ -153,9 +156,11 @@ API 端点：
 | 多层级记忆 | User/Session/Agent/Skill/Project |
 | 语义搜索 | 多语言嵌入 (83% 准确率) |
 | Token 压缩 | 90% 压缩 (无需 LLM) |
-| 自动备份 | 本地/云端 |
+| 本地存储 | 默认 (~/.memoryx) |
+| **本地+云端双存储** | 配置后自动双写 |
 | 云端同步 | AWS/GCS/阿里云/腾讯云/华为云/百度云 |
-| Web Dashboard | 可视化管理界面 |
+| Web Dashboard | 完整功能 (独立部署/插件一致) |
+| 多语言 | 6 种语言 |
 | 技能进化 | GEP 协议 |
 | 多 Agent | 记忆共享与隔离 |
 
