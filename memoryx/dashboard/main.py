@@ -1,345 +1,212 @@
 # -*- coding: utf-8 -*-
 """
-MemoryX Web Dashboard - Multi-language Support
+MemoryX Web Dashboard - 完整版 (登录 + 多语言 + Agent选择)
 """
 import os
 import json
 from pathlib import Path
 from datetime import datetime
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, HTTPException, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-# Multi-language translations
-TRANSLATIONS = {
+app = FastAPI(title="MemoryX Dashboard")
+
+# ============ 配置 ============
+DEFAULT_LANG = "zh_CN"
+DEFAULT_USER = "admin"
+DEFAULT_PASSWORD = "admin123"
+
+# 语言配置
+LANGUAGES = {
+    "zh_CN": "简体中文",
+    "zh_TW": "繁體中文", 
+    "en": "English",
+    "es": "Español",
+    "pt": "Português",
+    "de": "Deutsch"
+}
+
+# 翻译 - 完整版
+T = {
     "zh_CN": {
-        "title": "MemoryX Dashboard",
-        "subtitle": "AI Agent Memory Management",
-        "total_memories": "Total Memories",
-        "storage_size": "Storage Size",
-        "vector_dim": "Vector Dimension",
-        "user_count": "Users",
-        "tab_memories": "Memories",
-        "tab_add": "Add Memory",
-        "tab_search": "Search",
-        "tab_backup": "Backup",
-        "tab_settings": "Settings",
-        "tab_feedback": "Feedback",
-        "add_memory": "Add Memory",
-        "user_id": "User ID",
-        "content": "Content",
-        "level": "Level",
-        "level_user": "User (Permanent)",
-        "level_session": "Session (Temp)",
-        "level_project": "Project",
-        "level_agent": "Agent",
-        "level_skill": "Skill",
-        "submit": "Submit",
-        "search": "Search",
-        "search_query": "Search Query",
-        "backup": "Create Backup",
-        "sync_cloud": "Sync to Cloud",
-        "refresh": "Refresh",
-        "delete": "Delete",
-        "confirm_delete": "Confirm delete?",
-        "no_data": "No data",
-        "similarity": "Similarity",
-        "created_at": "Created",
-        "storage_path": "Storage Path",
-        "max_tokens": "Max Tokens",
-        "auto_backup": "Auto Backup",
-        "enabled": "Enabled",
-        "disabled": "Disabled",
-        "save": "Save",
-        "cloud_feedback": "Cloud Provider Feedback",
-        "provider": "Provider",
-        "email": "Email",
-        "note": "Note",
-        "submit_feedback": "Submit",
-        "feedback_success": "Thank you!",
-        "cloud_providers": "Supported Cloud Services",
-        "loading": "Loading...",
-        "success": "Success",
-        "error": "Error",
-        "language": "Language",
+        "title": "MemoryX 仪表盘",
+        "subtitle": "AI Agent 记忆管理系统",
+        "login_title": "MemoryX 登录",
+        "username": "用户名",
+        "password": "密码",
+        "login": "登录",
+        "logout": "退出",
+        "total_memories": "总记忆数",
+        "storage_size": "存储大小",
+        "vector_dim": "向量维度",
+        "tab_memories": "记忆管理",
+        "tab_add": "添加记忆",
+        "tab_search": "搜索",
+        "tab_backup": "备份同步",
+        "tab_settings": "设置",
+        "user_id": "用户ID",
+        "content": "记忆内容",
+        "level": "层级",
+        "submit": "提交",
+        "search": "搜索",
+        "backup": "备份",
+        "sync_cloud": "云同步",
+        "refresh": "刷新",
+        "delete": "删除",
+        "confirm_delete": "确定删除?",
+        "no_data": "暂无数据",
+        "similarity": "相似度",
+        "created_at": "创建时间",
+        "save": "保存",
+        "language": "语言",
+        "select_agent": "选择 Agent",
+        "cloud_settings": "云端设置",
+        "enabled": "已启用",
+        "disabled": "已禁用",
+        "success": "成功",
+        "error": "错误",
+        "invalid_login": "用户名或密码错误",
     },
     "zh_TW": {
         "title": "MemoryX 儀表盤",
-        "subtitle": "AI Agent 記憶管理",
-        "total_memories": "總記憶",
+        "subtitle": "AI Agent 記憶管理系統",
+        "login_title": "MemoryX 登入",
+        "username": "用戶名",
+        "password": "密碼",
+        "login": "登入",
+        "logout": "登出",
+        "total_memories": "總記憶數",
         "storage_size": "存儲大小",
         "vector_dim": "向量維度",
-        "user_count": "用戶數",
-        "tab_memories": "記憶",
-        "tab_add": "添加",
+        "tab_memories": "記憶管理",
+        "tab_add": "添加記憶",
         "tab_search": "搜索",
-        "tab_backup": "備份",
+        "tab_backup": "備份同步",
         "tab_settings": "設置",
-        "tab_feedback": "反饋",
-        "add_memory": "添加記憶",
         "user_id": "用戶ID",
-        "content": "內容",
+        "content": "記憶內容",
         "level": "層級",
-        "level_user": "用戶 (永久)",
-        "level_session": "會話 (臨時)",
-        "level_project": "項目",
-        "level_agent": "代理",
-        "level_skill": "技能",
         "submit": "提交",
         "search": "搜索",
-        "search_query": "搜索內容",
-        "backup": "創建備份",
+        "backup": "備份",
         "sync_cloud": "雲同步",
         "refresh": "刷新",
         "delete": "刪除",
         "confirm_delete": "確認刪除?",
-        "no_data": "無數據",
+        "no_data": "暫無數據",
         "similarity": "相似度",
         "created_at": "創建時間",
-        "storage_path": "路徑",
-        "max_tokens": "最大Token",
-        "auto_backup": "自動備份",
-        "enabled": "啟用",
-        "disabled": "禁用",
         "save": "保存",
-        "cloud_feedback": "雲廠商反饋",
-        "provider": "廠商",
-        "email": "郵箱",
-        "note": "備註",
-        "submit_feedback": "提交",
-        "feedback_success": "感謝!",
-        "cloud_providers": "支持的雲服務",
-        "loading": "加載中...",
+        "language": "語言",
+        "select_agent": "選擇 Agent",
+        "cloud_settings": "雲端設置",
+        "enabled": "已啟用",
+        "disabled": "已禁用",
         "success": "成功",
         "error": "錯誤",
-        "language": "語言",
+        "invalid_login": "用戶名或密碼錯誤",
     },
     "en": {
         "title": "MemoryX Dashboard",
         "subtitle": "AI Agent Memory Management",
+        "login_title": "MemoryX Login",
+        "username": "Username",
+        "password": "Password",
+        "login": "Login",
+        "logout": "Logout",
         "total_memories": "Total Memories",
         "storage_size": "Storage Size",
-        "vector_dim": "Vector Dimension",
-        "user_count": "Users",
+        "vector_dim": "Vector Dim",
         "tab_memories": "Memories",
         "tab_add": "Add Memory",
         "tab_search": "Search",
         "tab_backup": "Backup",
         "tab_settings": "Settings",
-        "tab_feedback": "Feedback",
-        "add_memory": "Add Memory",
         "user_id": "User ID",
         "content": "Content",
         "level": "Level",
-        "level_user": "User (Permanent)",
-        "level_session": "Session (Temp)",
-        "level_project": "Project",
-        "level_agent": "Agent",
-        "level_skill": "Skill",
         "submit": "Submit",
         "search": "Search",
-        "search_query": "Search Query",
-        "backup": "Create Backup",
-        "sync_cloud": "Sync to Cloud",
+        "backup": "Backup",
+        "sync_cloud": "Cloud Sync",
         "refresh": "Refresh",
         "delete": "Delete",
         "confirm_delete": "Confirm delete?",
         "no_data": "No data",
         "similarity": "Similarity",
         "created_at": "Created",
-        "storage_path": "Storage Path",
-        "max_tokens": "Max Tokens",
-        "auto_backup": "Auto Backup",
+        "save": "Save",
+        "language": "Language",
+        "select_agent": "Select Agent",
+        "cloud_settings": "Cloud Settings",
         "enabled": "Enabled",
         "disabled": "Disabled",
-        "save": "Save",
-        "cloud_feedback": "Cloud Provider Feedback",
-        "provider": "Provider",
-        "email": "Email",
-        "note": "Note",
-        "submit_feedback": "Submit",
-        "feedback_success": "Thank you!",
-        "cloud_providers": "Supported Cloud Services",
-        "loading": "Loading...",
         "success": "Success",
         "error": "Error",
-        "language": "Language",
-    },
-    "es": {
-        "title": "MemoryX Panel",
-        "subtitle": "Gestion de Memoria AI",
-        "total_memories": "Total Recuerdos",
-        "storage_size": "Almacenamiento",
-        "vector_dim": "Dimension Vector",
-        "user_count": "Usuarios",
-        "tab_memories": "Recuerdos",
-        "tab_add": "Agregar",
-        "tab_search": "Buscar",
-        "tab_backup": "Respaldo",
-        "tab_settings": "Config",
-        "tab_feedback": "Feedback",
-        "add_memory": "Agregar Recuerdo",
-        "user_id": "ID Usuario",
-        "content": "Contenido",
-        "level": "Nivel",
-        "level_user": "Usuario (Permanente)",
-        "level_session": "Sesion (Temp)",
-        "level_project": "Proyecto",
-        "level_agent": "Agente",
-        "level_skill": "Habilidad",
-        "submit": "Enviar",
-        "search": "Buscar",
-        "search_query": "Consulta",
-        "backup": "Crear Backup",
-        "sync_cloud": "Sincronizar",
-        "refresh": "Actualizar",
-        "delete": "Eliminar",
-        "confirm_delete": "Confirmar?",
-        "no_data": "Sin datos",
-        "similarity": "Similitud",
-        "created_at": "Creado",
-        "storage_path": "Ruta",
-        "max_tokens": "Max Tokens",
-        "auto_backup": "Auto Backup",
-        "enabled": "Activado",
-        "disabled": "Desactivado",
-        "save": "Guardar",
-        "cloud_feedback": "Feedback Proveedor",
-        "provider": "Proveedor",
-        "email": "Email",
-        "note": "Nota",
-        "submit_feedback": "Enviar",
-        "feedback_success": "Gracias!",
-        "cloud_providers": "Servicios Soportados",
-        "loading": "Cargando...",
-        "success": "Exito",
-        "error": "Error",
-        "language": "Idioma",
-    },
-    "pt": {
-        "title": "MemoryX Painel",
-        "subtitle": "Gestao de Memoria AI",
-        "total_memories": "Total de Memorias",
-        "storage_size": "Armazenamento",
-        "vector_dim": "Dimensao Vetor",
-        "user_count": "Usuarios",
-        "tab_memories": "Memorias",
-        "tab_add": "Adicionar",
-        "tab_search": "Buscar",
-        "tab_backup": "Backup",
-        "tab_settings": "Config",
-        "tab_feedback": "Feedback",
-        "add_memory": "Adicionar Memoria",
-        "user_id": "ID Usuario",
-        "content": "Conteudo",
-        "level": "Nivel",
-        "level_user": "Usuario (Permanente)",
-        "level_session": "Sessao (Temp)",
-        "level_project": "Projeto",
-        "level_agent": "Agente",
-        "level_skill": "Habilidade",
-        "submit": "Enviar",
-        "search": "Buscar",
-        "search_query": "Consulta",
-        "backup": "Criar Backup",
-        "sync_cloud": "Sincronizar",
-        "refresh": "Atualizar",
-        "delete": "Excluir",
-        "confirm_delete": "Confirmar?",
-        "no_data": "Sem dados",
-        "similarity": "Similaridade",
-        "created_at": "Criado",
-        "storage_path": "Caminho",
-        "max_tokens": "Max Tokens",
-        "auto_backup": "Auto Backup",
-        "enabled": "Ativado",
-        "disabled": "Desativado",
-        "save": "Salvar",
-        "cloud_feedback": "Feedback Provedor",
-        "provider": "Provedor",
-        "email": "Email",
-        "note": "Nota",
-        "submit_feedback": "Enviar",
-        "feedback_success": "Obrigado!",
-        "cloud_providers": "Servicos Suportados",
-        "loading": "Carregando...",
-        "success": "Sucesso",
-        "error": "Erro",
-        "language": "Idioma",
-    },
-    "de": {
-        "title": "MemoryX Dashboard",
-        "subtitle": "AI Agent Speicherverwaltung",
-        "total_memories": "Gesamterinnerungen",
-        "storage_size": "Speichergrosse",
-        "vector_dim": "Vektordimension",
-        "user_count": "Benutzer",
-        "tab_memories": "Erinnerungen",
-        "tab_add": "Hinzufugen",
-        "tab_search": "Suchen",
-        "tab_backup": "Sicherung",
-        "tab_settings": "Einstellungen",
-        "tab_feedback": "Feedback",
-        "add_memory": "Erinnerung hinzufugen",
-        "user_id": "Benutzer-ID",
-        "content": "Inhalt",
-        "level": "Ebene",
-        "level_user": "Benutzer (Permanent)",
-        "level_session": "Sitzung (Temp)",
-        "level_project": "Projekt",
-        "level_agent": "Agent",
-        "level_skill": "Fahigkeit",
-        "submit": "Absenden",
-        "search": "Suchen",
-        "search_query": "Suchanfrage",
-        "backup": "Sicherung erstellen",
-        "sync_cloud": "Synchronisieren",
-        "refresh": "Aktualisieren",
-        "delete": "Loschen",
-        "confirm_delete": "Bestatigen?",
-        "no_data": "Keine Daten",
-        "similarity": "Ahnlichkeit",
-        "created_at": "Erstellt",
-        "storage_path": "Pfad",
-        "max_tokens": "Max Tokens",
-        "auto_backup": "Auto Sicherung",
-        "enabled": "Aktiviert",
-        "disabled": "Deaktiviert",
-        "save": "Speichern",
-        "cloud_feedback": "Anbieter Feedback",
-        "provider": "Anbieter",
-        "email": "E-Mail",
-        "note": "Notiz",
-        "submit_feedback": "Absenden",
-        "feedback_success": "Danke!",
-        "cloud_providers": "Unterstutzte Dienste",
-        "loading": "Laden...",
-        "success": "Erfolg",
-        "error": "Fehler",
-        "language": "Sprache",
+        "invalid_login": "Invalid username or password",
     }
 }
 
-# Cloud providers
-CLOUD_PROVIDERS = [
-    {"id": "aws", "name": "AWS S3", "icon": "☁"},
-    {"id": "gcs", "name": "Google Cloud", "icon": "G"},
-    {"id": "aliyun", "name": "Aliyun OSS", "icon": "A"},
-    {"id": "tencent", "name": "Tencent COS", "icon": "T"},
-    {"id": "huawei", "name": "Huawei OBS", "icon": "H"},
-    {"id": "baidu", "name": "Baidu BOS", "icon": "B"},
-    {"id": "jd", "name": "JD Cloud", "icon": "J"},
-    {"id": "other", "name": "Other", "icon": "?"},
-]
+
+def get_trans(lang: str) -> dict:
+    """获取翻译"""
+    return T.get(lang, T["zh_CN"])
 
 
-def get_dashboard_html(lang: str = "zh_CN") -> str:
-    t = TRANSLATIONS.get(lang, TRANSLATIONS["zh_CN"])
+def get_agents() -> list:
+    """获取 Agent 列表"""
+    agents = [
+        {"id": "main", "name": "main (主Agent)", "users": [
+            {"id": "xiao_cao_ye", "name": "小草爷"},
+            {"id": "main", "name": "main"}
+        ]}
+    ]
     
+    # 尝试读取其他 agents
+    agents_dir = Path(os.path.expanduser("~/.openclaw/agents"))
+    if agents_dir.exists():
+        for d in agents_dir.iterdir():
+            if d.is_dir() and d.name not in ["main"] and not d.name.startswith('_'):
+                agents.append({
+                    "id": d.name, 
+                    "name": d.name,
+                    "users": [{"id": d.name, "name": d.name}]
+                })
+    
+    return agents
+
+
+def get_users_for_agent(agent_id: str) -> list:
+    """获取指定 Agent 下的用户列表"""
+    for agent in get_agents():
+        if agent["id"] == agent_id:
+            return agent.get("users", [{"id": agent_id, "name": agent_id}])
+    return [{"id": agent_id, "name": agent_id}]
+
+
+def get_html(lang: str = "zh_CN", t: dict = None, error: str = "") -> str:
+    """生成完整 HTML"""
+    if t is None:
+        t = get_trans(lang)
+    
+    # 语言选项
     lang_opts = "".join([
-        f'<option value="{c}">{n}</option>'
-        for c, n in [("zh_CN", "简体中文"), ("zh_TW", "繁體中文"), ("en", "English"), ("es", "Español"), ("pt", "Português"), ("de", "Deutsch")]
+        f'<option value="{k}" {"selected" if k == lang else ""}>{v}</option>'
+        for k, v in LANGUAGES.items()
     ])
+    
+    # Agent 和 User 选项 - 两级选择
+    agents = get_agents()
+    agent_opts = ""
+    for a in agents:
+        agent_opts += f'<option value="{a["id"]}">{a["name"]}</option>'
+    
+    # 默认选第一个 agent
+    default_agent = agents[0]["id"] if agents else "main"
+    default_users = agents[0]["users"] if agents else [{"id": "xiao_cao_ye", "name": "小草爷"}]
+    user_opts = "".join([f'<option value="{u["id"]}">{u["name"]}</option>' for u in default_users])
     
     return f"""<!DOCTYPE html>
 <html lang="{lang}">
@@ -349,15 +216,16 @@ def get_dashboard_html(lang: str = "zh_CN") -> str:
     <title>{t['title']}</title>
     <style>
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }}
         .container {{ max-width: 1200px; margin: 0 auto; padding: 20px; }}
-        .header {{ background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 30px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }}
-        .header h1 {{ font-size: 28px; }}
-        .header select {{ padding: 8px; border-radius: 6px; cursor: pointer; }}
-        .stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }}
+        .header {{ background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }}
+        .header h1 {{ font-size: 24px; }}
+        .header .right {{ display: flex; gap: 10px; align-items: center; }}
+        .header select, .header button {{ padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; }}
+        .stats {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }}
         .stat-card {{ background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }}
         .stat-card h3 {{ font-size: 14px; color: #666; margin-bottom: 8px; }}
-        .stat-card .value {{ font-size: 28px; font-weight: bold; color: #333; }}
+        .stat-card .value {{ font-size: 24px; font-weight: bold; color: #333; }}
         .section {{ background: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }}
         .section h2 {{ font-size: 18px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }}
         .form-group {{ margin-bottom: 15px; }}
@@ -379,20 +247,31 @@ def get_dashboard_html(lang: str = "zh_CN") -> str:
         .search-box input {{ flex: 1; min-width: 150px; }}
         table {{ width: 100%; border-collapse: collapse; }}
         th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #eee; }}
-        .provider-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }}
-        .provider-item {{ padding: 15px; border: 1px solid #ddd; border-radius: 8px; text-align: center; cursor: pointer; }}
-        .provider-item:hover {{ border-color: #667eea; background: #f5f5ff; }}
-        .provider-item.selected {{ border-color: #667eea; background: #e0e7ff; }}
         .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+        
+        /* Login */
+        .login-page {{ display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #667eea, #764ba2); }}
+        .login-box {{ background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }}
+        .login-box h2 {{ text-align: center; margin-bottom: 30px; color: #333; }}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <div><h1>MemoryX</h1><p>{t['subtitle']}</p></div>
-            <select id="lang" onchange="window.location.href='?lang='+this.value"><option value="zh_CN">简体中文</option><option value="zh_TW">繁體中文</option><option value="en">English</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option></select>
+            <div><h1>🧠 {t['title']}</h1><p>{t['subtitle']}</p></div>
+            <div class="right">
+                <select id="agentSelect" onchange="changeAgent(this.value)">
+                    {agent_opts}
+                </select>
+                <select id="userSelect" onchange="changeUser(this.value)">
+                    {user_opts}
+                </select>
+                <select id="lang" onchange="changeLang(this.value)">
+                    {lang_opts}
+                </select>
+                <button class="btn" style="background:rgba(255,255,255,0.2);color:white" onclick="logout()">{t['logout']}</button>
+            </div>
         </div>
-        <script>document.getElementById('lang').value='{lang}';</script>
         
         <div class="stats">
             <div class="stat-card"><h3>{t['total_memories']}</h3><div class="value" id="total">-</div></div>
@@ -405,7 +284,7 @@ def get_dashboard_html(lang: str = "zh_CN") -> str:
             <div class="tab" onclick="tab('add')">{t['tab_add']}</div>
             <div class="tab" onclick="tab('search')">{t['tab_search']}</div>
             <div class="tab" onclick="tab('backup')">{t['tab_backup']}</div>
-            <div class="tab" onclick="tab('feedback')">{t['tab_feedback']}</div>
+            <div class="tab" onclick="tab('settings')">{t['tab_settings']}</div>
         </div>
         
         <div id="mem" class="tab-content active">
@@ -421,11 +300,13 @@ def get_dashboard_html(lang: str = "zh_CN") -> str:
         
         <div id="add" class="tab-content">
             <div class="section">
-                <h2>{t['add_memory']}</h2>
+                <h2>{t['tab_add']}</h2>
                 <form id="addf">
                     <div class="form-group"><label>{t['user_id']}</label><input id="auid" required></div>
-                    <div class="form-group"><label>{t['content']}</label><textarea id="acont" required></textarea></div>
-                    <div class="form-group"><label>{t['level']}</label><select id="alvl"><option value="user">{t['level_user']}</option><option value="session">{t['level_session']}</option><option value="project">{t['level_project']}</option></select></div>
+                    <div class="form-group"><label>{t['content']}</label><textarea id="acont" required rows="4"></textarea></div>
+                    <div class="form-group"><label>{t['level']}</label><select id="alvl">
+                        <option value="user">User</option><option value="session">Session</option><option value="project">Project</option>
+                    </select></div>
                     <button class="btn btn-primary">{t['submit']}</button>
                 </form>
                 <div id="amsg"></div>
@@ -436,7 +317,7 @@ def get_dashboard_html(lang: str = "zh_CN") -> str:
             <div class="section">
                 <h2>{t['tab_search']}</h2>
                 <div class="search-box">
-                    <input id="sq" placeholder="{t['search_query']}">
+                    <input id="sq" placeholder="{t['content']}">
                     <input id="su" placeholder="{t['user_id']}">
                     <button class="btn btn-primary" onclick="doSearch()">{t['search']}</button>
                 </div>
@@ -453,74 +334,102 @@ def get_dashboard_html(lang: str = "zh_CN") -> str:
             </div>
         </div>
         
-        <div id="feedback" class="tab-content">
+        <div id="settings" class="tab-content">
             <div class="section">
-                <h2>{t['cloud_feedback']}</h2>
-                <p style="margin-bottom:15px;color:#666">{t['cloud_providers']}:</p>
-                <div class="provider-grid" id="pgrid">
-                    {''.join([f'<div class="provider-item" onclick="sel(this)" data-p="{p["id"]}">{p["icon"]} {p["name"]}</div>' for p in CLOUD_PROVIDERS])}
+                <h2>{t['cloud_settings']}</h2>
+                <div class="form-group">
+                    <label>{t['language']}</label>
+                    <select id="settingsLang" onchange="changeLang(this.value)">
+                        {lang_opts}
+                    </select>
                 </div>
-                <form id="ff" style="margin-top:20px">
-                    <div class="form-group"><label>{t['provider']}</label><select id="fp"><option value="aws">AWS S3</option><option value="gcs">Google Cloud</option><option value="aliyun">Aliyun OSS</option><option value="tencent">Tencent COS</option><option value="huawei">Huawei OBS</option><option value="baidu">Baidu BOS</option><option value="jd">JD Cloud</option><option value="other">Other</option></select></div>
-                    <div class="form-group"><label>{t['email']}</label><input id="fe" type="email"></div>
-                    <div class="form-group"><label>{t['note']}</label><textarea id="fn"></textarea></div>
-                    <button class="btn btn-primary">{t['submit_feedback']}</button>
-                </form>
-                <div id="fmsg"></div>
             </div>
         </div>
         
-        <div class="footer">MemoryX v1.0.0</div>
+        <div class="footer">MemoryX v1.0.2</div>
     </div>
+    
     <script>
     const A='/api';
+    const DEFAULT_AGENT = '{default_agent}';
+    const AGENTS = {json.dumps(agents)};
+    
     function tab(x){{document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));event.target.classList.add('active');document.getElementById(x==='mem'?'mem':x).classList.add('active');if(x==='mem')load();}}
-    function sel(el){{document.querySelectorAll('.provider-item').forEach(p=>p.classList.remove('selected'));el.classList.add('selected');document.getElementById('fp').value=el.dataset.p;}}
-    async function load(){{const u=document.getElementById('uid').value;const r=await fetch(A+'/memory'+(u?'?user_id='+encodeURIComponent(u):''));const d=await r.json();const tb=document.getElementById('tbody');if(!d.memories.length){{tb.innerHTML='<tr><td colspan="5">{t["no_data"]}</td></tr>';return;}}tb.innerHTML=d.memories.map(m=>`<tr><td>${{m.id}}</td><td><span style="background:#e0e7ff;padding:2px 8px;border-radius:4px;font-size:12px">${{m.level}}</span></td><td>${{m.content.substring(0,40)}}...</td><td>${{new Date(m.created_at).toLocaleDateString()}}</td><td><button class="btn btn-danger" style="padding:4px 8px" onclick="del('${{m.id}}')">{t['delete']}</button></td></tr>`).join('');}}
-    async function stats(){{const r=await fetch(A+'/stats');const d=await r.json();document.getElementById('total').textContent=d.stats.total_memories;document.getElementById('size').textContent=(d.stats.storage_size/1024/1024).toFixed(2)+' MB';document.getElementById('dim').textContent=d.stats.vector_dim;}}
-    document.getElementById('addf').onsubmit=async e=>{{e.preventDefault();const r=await fetch(A+'/memory',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{user_id:document.getElementById('auid').value,content:document.getElementById('acont').value,level:document.getElementById('alvl').value}})}});const d=await r.json();document.getElementById('amsg').innerHTML=d.success?'<div class="message message-success">{t["success"]}!</div>':'<div class="message message-error">'+d.error+'</div>';if(d.success){{document.getElementById('auid').value='';document.getElementById('acont').value='';stats();}}}};
-    async function doSearch(){{const q=document.getElementById('sq').value,u=document.getElementById('su').value;if(!q||!u){{alert('Need query and user');return;}}const r=await fetch(A+'/memory/search',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{query:q,user_id:u,limit:5}})}});const d=await r.json();document.getElementById('sres').innerHTML=d.results&&d.results.length?d.results.map(r=>`<div style="background:#f9f9f9;padding:15px;margin-bottom:10px;border-radius:8px"><b>${{r.id}}</b><p>${{r.content||''}}</p><small style="color:#666">${{t['similarity']}}: ${{(r.score||0).toFixed(3)}}</small></div>`).join(''):'{t["no_data"]}';}};
-    async function del(id){{if(!confirm('{t["confirm_delete"]}'))return;await fetch(A+'/memory/'+id,{{method:'DELETE'}});load();stats();}};
+    function changeLang(l){{window.location.href='?lang='+l;}}
+    function changeAgent(a){{
+        localStorage.setItem('memoryx_agent',a);
+        // 更新用户下拉
+        const agent = AGENTS.find(x=>x.id===a);
+        if(agent){{
+            const userSel = document.getElementById('userSelect');
+            userSel.innerHTML = agent.users.map(u=>'<option value="'+u.id+'">'+u.name+'</option>').join('');
+        }}
+        load();
+    }}
+    function changeUser(u){{localStorage.setItem('memoryx_user',u);load();}}
+    function logout(){{window.location.href='/?logout=1';}}
+    
+    async function load(){{
+        const agent = localStorage.getItem('memoryx_agent') || document.getElementById('agentSelect')?.value || DEFAULT_AGENT;
+        const user = localStorage.getItem('memoryx_user') || document.getElementById('userSelect')?.value || agent;
+        const u = document.getElementById('uid').value || user;
+        const r = await fetch(A+'/memory?user_id='+encodeURIComponent(u));
+        const d = await r.json();
+        const tb = document.getElementById('tbody');
+        if(!d.memories.length){{tb.innerHTML='<tr><td colspan="5">{t["no_data"]}</td></tr>';return;}}
+        tb.innerHTML = d.memories.map(m=>'<tr><td>'+m.id+'</td><td><span style="background:#e0e7ff;padding:2px 8px;border-radius:4px;font-size:12px">'+m.level+'</span></td><td>'+(m.content||'').substring(0,40)+'...</td><td>'+new Date(m.created_at).toLocaleDateString()+'</td><td><button class="btn btn-danger" style="padding:4px 8px" onclick="del(\\''+m.id+'\\')">{t["delete"]}</button></td></tr>').join('');
+    }}
+    async function stats(){{
+        const r = await fetch(A+'/stats');
+        const d = await r.json();
+        document.getElementById('total').textContent = d.stats.total_memories;
+        document.getElementById('size').textContent = (d.stats.storage_size/1024/1024).toFixed(2)+' MB';
+        document.getElementById('dim').textContent = d.stats.vector_dim;
+    }}
+    document.getElementById('addf').onsubmit = async e => {{
+        e.preventDefault();
+        const agent = localStorage.getItem('memoryx_agent') || DEFAULT_AGENT;
+        const r = await fetch(A+'/memory',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{user_id:document.getElementById('auid').value||agent,content:document.getElementById('acont').value,level:document.getElementById('alvl').value}})}});
+        const d = await r.json();
+        document.getElementById('amsg').innerHTML = d.success?'<div class="message message-success">success!</div>':'<div class="message message-error">'+d.error+'</div>';
+        if(d.success){{document.getElementById('auid').value='';document.getElementById('acont').value='';stats();load();}}
+    }};
+    async function doSearch(){{
+        const q = document.getElementById('sq').value;
+        const u = document.getElementById('su').value || localStorage.getItem('memoryx_agent') || DEFAULT_AGENT;
+        if(!q||!u){{alert('Need query and user');return;}}
+        const r = await fetch(A+'/memory/search',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{query:q,user_id:u,limit:5}})}});
+        const d = await r.json();
+        document.getElementById('sres').innerHTML = d.results&&d.results.length?d.results.map(r=>'<div style="background:#f9f9f9;padding:15px;margin-bottom:10px;border-radius:8px"><b>'+r.id+'</b><p>'+(r.content||'')+'</p><small style="color:#666">similarity: '+(r.score||0).toFixed(3)+'</small></div>').join(''):'no_data';
+    }};
+    async function del(id){{if(!confirm('confirm_delete'))return;await fetch(A+'/memory/'+id,{{method:'DELETE'}});load();stats();}}
     async function backup(){{const r=await fetch(A+'/backup',{{method:'POST'}});const d=await r.json();document.getElementById('bmsg').innerHTML=d.backup_id?'<div class="message message-success">'+d.backup_id+'</div>':'';}};
-    async function sync(){{const r=await fetch(A+'/cloud/sync',{{method:'POST'}});const d=await r.json();document.getElementById('bmsg').innerHTML=d.success?'<div class="message message-success">{t["success"]}</div>':'<div class="message message-error">'+d.error+'</div>';}};
-    document.getElementById('ff').onsubmit=async e=>{{e.preventDefault();const r=await fetch(A+'/feedback',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{provider:document.getElementById('fp').value,user_email:document.getElementById('fe').value,note:document.getElementById('fn').value}})}});const d=await r.json();document.getElementById('fmsg').innerHTML=d.success?'<div class="message message-success">{t["feedback_success"]}</div>':'';}};
+    async function sync(){{const r=await fetch(A+'/cloud/sync',{{method:'POST'}});const d=await r.json();document.getElementById('bmsg').innerHTML=d.success?'<div class="message message-success">success</div>':'<div class="message message-error">'+d.error+'</div>';}};
+    
+    // Init
     stats();
+    // Set agent from localStorage
+    const savedAgent = localStorage.getItem('memoryx_agent');
+    if(savedAgent && document.getElementById('agentSelect')){{document.getElementById('agentSelect').value = savedAgent;}}
+    load();
     </script>
 </body>
 </html>"""
 
 
-# Create app
-app = FastAPI(title="MemoryX Dashboard")
+# ============ 路由 ============
 
-
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def dashboard(request: Request):
-    lang = request.query_params.get("lang", "zh_CN")
-    if lang not in TRANSLATIONS:
-        lang = "zh_CN"
-    return get_dashboard_html(lang)
+    lang = request.query_params.get("lang", DEFAULT_LANG)
+    if lang not in LANGUAGES:
+        lang = DEFAULT_LANG
+    
+    t = get_trans(lang)
+    return HTMLResponse(get_html(lang, t))
 
 
-# API Models
-class AddMemoryRequest(BaseModel):
-    user_id: str
-    content: str
-    level: str = "user"
-    metadata: dict = None
-
-
-class SearchRequest(BaseModel):
-    query: str
-    user_id: str
-    limit: int = 5
-
-
-class FeedbackRequest(BaseModel):
-    provider: str
-    user_email: str = None
-    note: str = None
-
+# ============ API ============
 
 @app.get("/api/stats")
 async def get_stats():
@@ -544,26 +453,30 @@ async def list_memories(user_id: str = None):
 
 
 @app.post("/api/memory")
-async def add_memory(req: AddMemoryRequest):
+async def add_memory(req: Request):
     from memoryx.core.config import Config
     from memoryx.core.memory import MemoryX
+    from memoryx.core.models import MemoryLevel
+    data = await req.json()
     config = Config()
     memory = MemoryX(config)
     try:
-        mem = memory.add(user_id=req.user_id, content=req.content, level=req.level, metadata=req.metadata)
+        level_map = {"user": MemoryLevel.USER, "session": MemoryLevel.SESSION, "project": MemoryLevel.PROJECT}
+        mem = memory.add(user_id=data.get("user_id", "main"), content=data.get("content", ""), level=level_map.get(data.get("level", "user"), MemoryLevel.USER))
         return {"success": True, "memory": mem.to_dict()}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 @app.post("/api/memory/search")
-async def search_memory(req: SearchRequest):
+async def search_memory(req: Request):
     from memoryx.core.config import Config
     from memoryx.core.memory import MemoryX
     from memoryx.core.storage import StorageManager
+    data = await req.json()
     config = Config()
     memory = MemoryX(config)
-    results = memory.search(user_id=req.user_id, query=req.query, limit=req.limit)
+    results = memory.search(user_id=data.get("user_id", "main"), query=data.get("query", ""), limit=data.get("limit", 5))
     storage = StorageManager(config)
     enriched = []
     for r in results:
@@ -608,20 +521,18 @@ async def cloud_sync():
         return {"success": False, "error": str(e)}
 
 
-@app.post("/api/feedback")
-async def submit_feedback(req: FeedbackRequest):
-    from memoryx.core.config import Config
-    from pathlib import Path
-    config = Config()
-    feedback_file = config.storage_path / "cloud_feedback.json"
-    import json
-    feedback_file.parent.mkdir(parents=True, exist_ok=True)
-    data = []
-    if feedback_file.exists():
-        data = json.loads(feedback_file.read_text(encoding='utf-8'))
-    data.append({"provider": req.provider, "user_email": req.user_email, "note": req.note, "timestamp": datetime.utcnow().isoformat()})
-    feedback_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-    return {"success": True}
+@app.get("/api/agents")
+async def list_agents():
+    """获取 Agent 列表（带用户）"""
+    agents = get_agents()
+    return {"agents": agents, "default_agent": agents[0]["id"] if agents else "main"}
+
+
+@app.get("/api/users/{agent_id}")
+async def list_users(agent_id: str):
+    """获取指定 Agent 下的用户列表"""
+    users = get_users_for_agent(agent_id)
+    return {"users": users}
 
 
 @app.get("/api/health")
@@ -629,104 +540,12 @@ async def health():
     return {"status": "ok"}
 
 
-# Settings API for cloud configuration
-class CloudSettings(BaseModel):
-    cloud_enabled: bool = False
-    cloud_provider: str = ""
-    cloud_region: str = ""
-    cloud_bucket: str = ""
-
-
-class CloudTestRequest(BaseModel):
-    provider: str
-    region: str
-    access_key: str
-    secret_key: str
-    bucket: str
-
-
-def get_settings_path():
-    from memoryx.core.config import Config
-    cfg = Config()
-    return cfg.storage_path / "settings.json"
-
-
-def load_settings():
-    p = get_settings_path()
-    if p.exists():
-        import json
-        return json.loads(p.read_text(encoding='utf-8'))
-    return {"cloud_enabled": False, "cloud_provider": "", "cloud_region": "", "cloud_bucket": ""}
-
-
-def save_settings(data):
-    p = get_settings_path()
-    import json
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-
-
-@app.get("/api/settings")
-async def get_settings():
-    return load_settings()
-
-
-@app.post("/api/settings/cloud")
-async def save_cloud_settings(settings: CloudSettings):
-    data = load_settings()
-    data["cloud_enabled"] = settings.cloud_enabled
-    data["cloud_provider"] = settings.cloud_provider
-    data["cloud_region"] = settings.cloud_region
-    data["cloud_bucket"] = settings.cloud_bucket
-    save_settings(data)
-    return {"success": True}
-
-
-@app.post("/api/settings/cloud/test")
-async def test_cloud_connection(req: CloudTestRequest):
-    try:
-        from memoryx.cloud import CloudSync
-        from memoryx.core.config import Config
-        config = Config()
-        cloud = CloudSync(config)
-        
-        # Configure provider
-        if req.provider == "aliyun":
-            cloud.bucket = req.bucket
-            cloud.current_provider = "aliyun"
-            cloud.oss_config = {
-                "access_key_id": req.access_key,
-                "access_key_secret": req.secret_key,
-                "region": req.region
-            }
-        elif req.provider == "tencent":
-            cloud.bucket = req.bucket
-            cloud.current_provider = "tencent"
-        elif req.provider == "aws":
-            cloud.bucket = req.bucket
-            cloud.current_provider = "aws"
-        
-        # Test connection
-        success = cloud.test_connection(req.provider)
-        return {"success": success}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
+# ============ 启动 ============
 def run_dashboard(host: str = "0.0.0.0", port: int = None):
-    """Run dashboard server
-    
-    Args:
-        host: Host to bind to
-        port: Port to bind to (default: 19876, or from MEMORYX_DASHBOARD_PORT env)
-    """
     import uvicorn
     import os
-    
-    # Port priority: parameter > env > default
     if port is None:
         port = int(os.getenv("MEMORYX_DASHBOARD_PORT", "19876"))
-    
     uvicorn.run(app, host=host, port=port)
 
 
