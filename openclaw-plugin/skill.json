@@ -10,6 +10,7 @@ trigger:
   - 记忆
   - 保存
   - 搜索
+  - 回忆
 
 capabilities:
   memory:
@@ -20,16 +21,12 @@ capabilities:
       - delete
       - context
       - list
-  backup:
-    description: 自动备份
-    actions:
-      - backup
-      - restore
-      - sync
-  dashboard:
-    description: Web Dashboard 管理界面
-    url: /memoryx/dashboard
-    port: 19876
+  recall:
+    description: 语义搜索记忆
+    trigger: ["搜索", "回忆", "查找"]
+  remember:
+    description: 记住内容
+    trigger: ["记住", "记住"]
 
 config:
   storage_path:
@@ -38,27 +35,16 @@ config:
     description: 记忆存储路径
   max_context_tokens:
     type: number
-    default: 4000
+    default: 500
     description: 上下文最大 Token 数
   auto_backup:
     type: boolean
     default: true
     description: 自动备份开关
-  default_level:
-    type: string
-    default: user
-    description: 默认记忆层级
-  dashboard_enabled:
-    type: boolean
-    default: true
-    description: 启用 Web Dashboard
-  dashboard_port:
-    type: number
-    default: 19876
-    description: Dashboard 端口
 
 examples:
   - "记住我喜欢蓝色"
   - "搜索颜色偏好"
+  - "回忆今天的工作"
   - "获取记忆上下文"
   - "打开 Dashboard"
