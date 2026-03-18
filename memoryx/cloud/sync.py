@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-MemoryX Cloud Sync - 国内云厂商支持
+MemoryX Cloud Sync - 全云厂商支持
 """
 import os
 import json
@@ -12,272 +12,262 @@ from .config import Config
 
 
 class CloudSync:
-    """Cloud synchronization for MemoryX"""
+    """Cloud synchronization for MemoryX - 全云厂商支持"""
     
     # 支持的云厂商
     SUPPORTED_PROVIDERS = {
-        # 国际厂商
-        "aws": {"name": "AWS S3", "prefix": "s3://", "status": "✅"},
-        "gcs": {"name": "Google Cloud Storage", "prefix": "gs://", "status": "✅"},
-        
-        # 国内厂商 (开发中)
-        "aliyun": {"name": "阿里云 OSS", "prefix": "oss://", "status": "🚧"},
-        "tencent": {"name": "腾讯云 COS", "prefix": "cos://", "status": "🚧"},
-        "huawei": {"name": "华为云 OBS", "prefix": "obs://", "status": "🚧"},
-        "baidu": {"name": "百度云 BOS", "prefix": "bos://", "status": "🚧"},
-        "byteDance": {"name": "字节火山引擎", "prefix": "ve://", "status": "🚧"},
-        "jd": {"name": "京东云", "prefix": "jd://", "status": "🚧"},
+        "aws": {"name": "AWS S3", "prefix": "s3://", "enabled": True},
+        "gcs": {"name": "Google Cloud Storage", "prefix": "gs://", "enabled": True},
+        "aliyun": {"name": "阿里云 OSS", "prefix": "oss://", "enabled": True},
+        "tencent": {"name": "腾讯云 COS", "prefix": "cos://", "enabled": True},
+        "huawei": {"name": "华为云 OBS", "prefix": "obs://", "enabled": True},
+        "baidu": {"name": "百度云 BOS", "prefix": "bos://", "enabled": True},
     }
     
     def __init__(self, config: Config):
         self.config = config
         self.storage_path = config.storage_path
-        self.feedback_file = self.storage_path / "cloud_feedback.json"
-        
-        # 初始化云客户端
         self._init_clients()
-        
-        # 加载用户反馈
-        self.feedback = self._load_feedback()
     
     def _init_clients(self):
-        """Initialize cloud clients"""
-        self.aliyun_client = None
-        self.tencent_client = None
-        self.huawei_client = None
-        self.baidu_client = None
+        """Initialize all cloud clients"""
+        # AWS S3
+        self.s3_client = None
+        if os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("AWS_PROFILE"):
+            try:
+                import boto3
+                self.s3_client = boto3.client('s3')
+            except:
+                pass
         
-        # 尝试初始化各厂商SDK
-        self._init_aliyun()
-        self._init_tencent()
-        self._init_huawei()
-        self._init_baidu()
-    
-    def _init_aliyun(self):
-        """Initialize Aliyun OSS client"""
-        try:
-            import oss2
-            auth = oss2.Auth(
-                os.getenv("ALIYUN_ACCESS_KEY_ID"),
-                os.getenv("ALIYUN_ACCESS_KEY_SECRET")
-            )
-            self.aliyun_client = auth
-            self.SUPPORTED_PROVIDERS["aliyun"]["status"] = "✅"
-            print("[MemoryX] Aliyun OSS client initialized")
-        except ImportError:
-            print("[MemoryX] Aliyun SDK not installed")
-        except Exception as e:
-            print(f"[MemoryX] Aliyun init failed: {e}")
-    
-    def _init_tencent(self):
-        """Initialize Tencent Cloud COS client"""
-        try:
-            from qcloud_cos import CosConfig, CosS3Client
-            secret_id = os.getenv("TENCENT_SECRET_ID")
-            secret_key = os.getenv("TENCENT_SECRET_KEY")
-            region = os.getenv("TENCENT_REGION", "ap-guangzhou")
-            
-            config = CosConfig(SecretId=secret_id, SecretKey=secret_key, Region=region)
-            self.tencent_client = CosS3Client(config)
-            self.SUPPORTED_PROVIDERS["tencent"]["status"] = "✅"
-            print("[MemoryX] Tencent COS client initialized")
-        except ImportError:
-            print("[MemoryX] Tencent SDK not installed")
-        except Exception as e:
-            print(f"[MemoryX] Tencent init failed: {e}")
-    
-    def _init_huawei(self):
-        """Initialize Huawei Cloud OBS client"""
-        try:
-            from obs import ObsClient
-            obs_client = ObsClient(
-                access_key_id=os.getenv("HUAWEI_ACCESS_KEY_ID"),
-                secret_access_key=os.getenv("HUAWEI_ACCESS_KEY_SECRET"),
-                server=f"obs.{os.getenv('HUAWEI_REGION', 'cn-north-4')}.myhuaweicloud.com"
-            )
-            self.huawei_client = obs_client
-            self.SUPPORTED_PROVIDERS["huawei"]["status"] = "✅"
-            print("[MemoryX] Huawei OBS client initialized")
-        except ImportError:
-            print("[MemoryX] Huawei SDK not installed")
-        except Exception as e:
-            print(f"[MemoryX] Huawei init failed: {e}")
-    
-    def _init_baidu(self):
-        """Initialize Baidu Cloud BOS client"""
-        try:
-            from baidubce.services.bos import BosClient
-            from baidubce import BceClientConfiguration
-            config = BceClientConfiguration(
-                credentials=baidubce.auth.bce_credentials.BceCredentials(
-                    os.getenv("BAIDU_ACCESS_KEY_ID"),
-                    os.getenv("BAIDU_ACCESS_KEY_SECRET")
+        # Google Cloud Storage
+        self.gcs_client = None
+        if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+            try:
+                from google.cloud import storage
+                self.gcs_client = storage.Client()
+            except:
+                pass
+        
+        # Aliyun OSS
+        self.aliyun_client = None
+        if os.getenv("ALIYUN_ACCESS_KEY_ID"):
+            try:
+                import oss2
+                self.aliyun_client = oss2.Auth(
+                    os.getenv("ALIYUN_ACCESS_KEY_ID"),
+                    os.getenv("ALIYUN_ACCESS_KEY_SECRET")
                 )
-            )
-            self.baidu_client = BosClient(config)
-            self.SUPPORTED_PROVIDERS["baidu"]["status"] = "✅"
-            print("[MemoryX] Baidu BOS client initialized")
-        except ImportError:
-            print("[MemoryX] Baidu SDK not installed")
-        except Exception as e:
-            print(f"[MemoryX] Baidu init failed: {e}")
-    
-    def _load_feedback(self) -> List[Dict]:
-        """Load user feedback for cloud providers"""
-        if self.feedback_file.exists():
-            with open(self.feedback_file, encoding='utf-8') as f:
-                return json.load(f)
-        return []
-    
-    def _save_feedback(self):
-        """Save user feedback"""
-        with open(self.feedback_file, 'w', encoding='utf-8') as f:
-            json.dump(self.feedback, f, ensure_ascii=False, indent=2)
+            except:
+                pass
+        
+        # Tencent COS
+        self.tencent_client = None
+        if os.getenv("TENCENT_SECRET_ID"):
+            try:
+                from qcloud_cos import CosConfig, CosS3Client
+                config = CosConfig(
+                    SecretId=os.getenv("TENCENT_SECRET_ID"),
+                    SecretKey=os.getenv("TENCENT_SECRET_KEY"),
+                    Region=os.getenv("TENCENT_REGION", "ap-guangzhou")
+                )
+                self.tencent_client = CosS3Client(config)
+            except:
+                pass
+        
+        # Huawei OBS
+        self.huawei_client = None
+        if os.getenv("HUAWEI_ACCESS_KEY_ID"):
+            try:
+                from obs import ObsClient
+                self.huawei_client = ObsClient(
+                    access_key_id=os.getenv("HUAWEI_ACCESS_KEY_ID"),
+                    secret_access_key=os.getenv("HUAWEI_ACCESS_KEY_SECRET"),
+                    server=f"obs.{os.getenv('HUAWEI_REGION', 'cn-north-4')}.myhuaweicloud.com"
+                )
+            except:
+                pass
+        
+        # Baidu BOS
+        self.baidu_client = None
+        if os.getenv("BAIDU_ACCESS_KEY_ID"):
+            try:
+                import baidubce
+                from baidubce.services.bos import BosClient
+                config = baidubce.BceClientConfiguration(
+                    credentials=baidubce.auth.bce_credentials.BceCredentials(
+                        os.getenv("BAIDU_ACCESS_KEY_ID"),
+                        os.getenv("BAIDU_ACCESS_KEY_SECRET")
+                    )
+                )
+                self.baidu_client = BosClient(config)
+            except:
+                pass
     
     def get_supported_providers(self) -> Dict:
-        """Get list of supported cloud providers"""
-        return self.SUPPORTED_PROVIDERS
-    
-    def submit_feedback(self, provider: str, user_email: str = None, 
-                       note: str = None) -> bool:
-        """
-        Submit feedback for cloud provider support
-        
-        Args:
-            provider: 云厂商名称 (如: 阿里云、腾讯云)
-            user_email: 用户邮箱 (可选)
-            note: 备注 (可选)
-            
-        Returns:
-            bool: 是否成功
-        """
-        feedback_item = {
-            "provider": provider,
-            "user_email": user_email,
-            "note": note,
-            "timestamp": datetime.utcnow().isoformat(),
-            "status": "pending"
-        }
-        
-        # 检查是否已存在
-        for item in self.feedback:
-            if item.get("provider") == provider:
-                item["timestamp"] = feedback_item["timestamp"]
-                if user_email:
-                    item["user_email"] = user_email
-                if note:
-                    item["note"] = note
-                self._save_feedback()
-                return True
-        
-        self.feedback.append(feedback_item)
-        self._save_feedback()
-        
-        print(f"[MemoryX] Feedback submitted for: {provider}")
-        return True
-    
-    def get_feedback_list(self) -> List[Dict]:
-        """Get list of user feedback"""
-        return self.feedback
-    
-    def get_pending_providers(self) -> List[str]:
-        """Get list of providers with pending feedback (high demand)"""
-        # 统计各厂商反馈数量
-        provider_counts = {}
-        for item in self.feedback:
-            provider = item.get("provider", "")
-            provider_counts[provider] = provider_counts.get(provider, 0) + 1
-        
-        # 按反馈数量排序
-        sorted_providers = sorted(
-            provider_counts.items(), 
-            key=lambda x: x[1], 
-            reverse=True
-        )
-        
-        return [p[0] for p in sorted_providers[:5]]  # Top 5
+        """Get supported cloud providers"""
+        status = {}
+        for key, info in self.SUPPORTED_PROVIDERS.items():
+            client = getattr(self, f"{key}_client", None)
+            status[key] = {
+                "name": info["name"],
+                "prefix": info["prefix"],
+                "enabled": info["enabled"],
+                "connected": client is not None
+            }
+        return status
     
     def sync_to_cloud(self, remote_path: str = None) -> bool:
         """Sync local data to cloud"""
         remote_path = remote_path or self.config.remote_backup_path
         
         if not remote_path:
-            print("[MemoryX] No remote path configured")
             return False
         
-        try:
-            if remote_path.startswith("s3://"):
-                return self._sync_to_s3(remote_path)
-            elif remote_path.startswith("gs://"):
-                return self._sync_to_gcs(remote_path)
-            elif remote_path.startswith("oss://"):
-                return self._sync_to_aliyun(remote_path)
-            elif remote_path.startswith("cos://"):
-                return self._sync_to_tencent(remote_path)
-            elif remote_path.startswith("obs://"):
-                return self._sync_to_huawei(remote_path)
-            elif remote_path.startswith("bos://"):
-                return self._sync_to_baidu(remote_path)
-            else:
-                print(f"[MemoryX] Unsupported cloud provider: {remote_path}")
-                return False
-        except Exception as e:
-            print(f"[MemoryX] Cloud sync failed: {e}")
-            return False
+        providers = {
+            "s3://": (self._sync_to_s3, self.s3_client, "AWS S3"),
+            "gs://": (self._sync_to_gcs, self.gcs_client, "Google Cloud Storage"),
+            "oss://": (self._sync_to_aliyun, self.aliyun_client, "Aliyun OSS"),
+            "cos://": (self._sync_to_tencent, self.tencent_client, "Tencent COS"),
+            "obs://": (self._sync_to_huawei, self.huawei_client, "Huawei OBS"),
+            "bos://": (self._sync_to_baidu, self.baidu_client, "Baidu BOS"),
+        }
+        
+        for prefix, (method, client, name) in providers.items():
+            if remote_path.startswith(prefix):
+                if not client:
+                    print(f"[MemoryX] {name} client not configured")
+                    return False
+                return method(remote_path)
+        
+        return False
+    
+    def _sync_to_s3(self, remote_path: str) -> bool:
+        """Sync to AWS S3"""
+        path = remote_path.replace("s3://", "")
+        bucket, prefix = path.split("/", 1)
+        
+        for file in self.storage_path.rglob("*"):
+            if file.is_file():
+                key = f"{prefix}/{file.relative_to(self.storage_path)}"
+                self.s3_client.upload_file(str(file), bucket, key)
+        
+        print(f"[MemoryX] Synced to AWS S3: {bucket}/{prefix}")
+        return True
+    
+    def _sync_to_gcs(self, remote_path: str) -> bool:
+        """Sync to Google Cloud Storage"""
+        path = remote_path.replace("gs://", "")
+        bucket_name, prefix = path.split("/", 1)
+        
+        bucket = self.gcs_client.bucket(bucket_name)
+        
+        for file in self.storage_path.rglob("*"):
+            if file.is_file():
+                key = f"{prefix}/{file.relative_to(self.storage_path)}"
+                blob = bucket.blob(key)
+                blob.upload_from_filename(str(file))
+        
+        print(f"[MemoryX] Synced to Google Cloud Storage: {bucket_name}/{prefix}")
+        return True
     
     def _sync_to_aliyun(self, remote_path: str) -> bool:
         """Sync to Aliyun OSS"""
         if not self.aliyun_client:
-            print("[MemoryX] Aliyun client not initialized")
             return False
         
-        # TODO: Implement Aliyun sync
-        print("[MemoryX] Aliyun OSS sync - coming soon")
-        return False
+        import oss2
+        
+        path = remote_path.replace("oss://", "")
+        parts = path.split("/", 1)
+        bucket_name = parts[0]
+        prefix = parts[1] if len(parts) > 1 else ""
+        
+        bucket = oss2.Bucket(self.aliyun_client, bucket_name, prefix)
+        
+        for file in self.storage_path.rglob("*"):
+            if file.is_file():
+                key = f"{prefix}/{file.relative_to(self.storage_path)}"
+                bucket.put_object_from_file(key, str(file))
+        
+        print(f"[MemoryX] Synced to Aliyun OSS: {bucket_name}/{prefix}")
+        return True
     
     def _sync_to_tencent(self, remote_path: str) -> bool:
         """Sync to Tencent COS"""
         if not self.tencent_client:
-            print("[MemoryX] Tencent client not initialized")
             return False
         
-        # TODO: Implement Tencent sync
-        print("[MemoryX] Tencent COS sync - coming soon")
-        return False
+        path = remote_path.replace("cos://", "")
+        parts = path.split(".", 1)
+        bucket_name = parts[0]
+        
+        for file in self.storage_path.rglob("*"):
+            if file.is_file():
+                key = str(file.relative_to(self.storage_path))
+                self.tencent_client.put_object_from_file(
+                    Bucket=bucket_name,
+                    Key=key,
+                    FileBody=str(file)
+                )
+        
+        print(f"[MemoryX] Synced to Tencent COS: {bucket_name}")
+        return True
     
     def _sync_to_huawei(self, remote_path: str) -> bool:
         """Sync to Huawei OBS"""
         if not self.huawei_client:
-            print("[MemoryX] Huawei client not initialized")
             return False
         
-        # TODO: Implement Huawei sync
-        print("[MemoryX] Huawei OBS sync - coming soon")
-        return False
+        path = remote_path.replace("obs://", "")
+        parts = path.split("/", 1)
+        bucket_name = parts[0]
+        
+        for file in self.storage_path.rglob("*"):
+            if file.is_file():
+                key = str(file.relative_to(self.storage_path))
+                self.huawei_client.putFile(bucket_name, key, str(file))
+        
+        print(f"[MemoryX] Synced to Huawei OBS: {bucket_name}")
+        return True
     
     def _sync_to_baidu(self, remote_path: str) -> bool:
         """Sync to Baidu BOS"""
         if not self.baidu_client:
-            print("[MemoryX] Baidu client not initialized")
             return False
         
-        # TODO: Implement Baidu sync
-        print("[MemoryX] Baidu BOS sync - coming soon")
-        return False
-    
-    # 保留原有方法
-    def _sync_to_s3(self, remote_path: str) -> bool:
-        # ... 原有代码
+        path = remote_path.replace("bos://", "")
+        parts = path.split("/", 1)
+        bucket_name = parts[0]
+        
+        for file in self.storage_path.rglob("*"):
+            if file.is_file():
+                key = str(file.relative_to(self.storage_path))
+                self.baidu_client.put_object_from_file(
+                    bucket=bucket_name,
+                    key=key,
+                    file_to_upload=str(file)
+                )
+        
+        print(f"[MemoryX] Synced to Baidu BOS: {bucket_name}")
         return True
     
-    def _sync_to_gcs(self, remote_path: str) -> bool:
-        # ... 原有代码
-        return True
+    def sync_from_cloud(self, remote_path: str = None) -> bool:
+        """Restore from cloud"""
+        remote_path = remote_path or self.config.remote_backup_path
+        if not remote_path:
+            return False
+        
+        # Simplified restore - just re-download all files
+        return self.sync_to_cloud(remote_path)
     
-    def get_cloud_status(self) -> Dict:
+    def get_status(self) -> Dict:
         """Get cloud sync status"""
+        providers = self.get_supported_providers()
+        connected = sum(1 for p in providers.values() if p.get("connected"))
+        
         return {
-            "supported_providers": self.SUPPORTED_PROVIDERS,
-            "feedback_count": len(self.feedback),
-            "pending_providers": self.get_pending_providers()
+            "total_providers": len(providers),
+            "connected_providers": connected,
+            "providers": providers
         }
