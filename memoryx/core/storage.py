@@ -5,11 +5,9 @@ MemoryX 存储管理
 import json
 import sqlite3
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from datetime import datetime
-
-from .models import Memory
-from .config import Config
+from dataclasses import asdict
 
 
 class StorageManager:
@@ -39,7 +37,7 @@ class StorageManager:
                 content TEXT NOT NULL,
                 level TEXT NOT NULL,
                 metadata TEXT,
-                embedding BLOB,
+                embedding TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 expires_at TEXT
@@ -47,9 +45,9 @@ class StorageManager:
         """)
         
         # 创建索引
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_id ON memories(user_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_level ON memories(level)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_created ON memories(created_at)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_level ON memories(level)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_created ON memories(created_at)")
         
         # Agent 表
         cursor.execute("""
@@ -129,6 +127,9 @@ class StorageManager:
         if not row:
             return None
         
+        # 延迟导入避免循环
+        from .models import Memory
+        
         return Memory(
             id=row["id"],
             user_id=row["user_id"],
@@ -144,6 +145,8 @@ class StorageManager:
     def get_by_user(self, user_id: str, level: str = None, 
                     agent_id: str = None, limit: int = 100):
         """获取用户的所有记忆"""
+        from .models import Memory
+        
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -216,4 +219,5 @@ class StorageManager:
     
     def close(self):
         """关闭连接"""
+        # SQLite 自动管理
         pass
