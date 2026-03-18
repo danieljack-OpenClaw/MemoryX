@@ -43,7 +43,7 @@ except Exception as e:
 # 3. 搜索记忆
 print("\n[3] Testing search...")
 try:
-    results = memory.search_memories(
+    results = memory.search(
         user_id="test_user",
         query="communication preference"
     )
