@@ -1,6 +1,6 @@
 name: memoryx
-description: MemoryX - AI Agent 长期记忆系统，提供语义搜索和 Token 压缩
-version: 1.0.1
+description: MemoryX - AI Agent 长期记忆系统，提供语义搜索和 Token 压缩，支持本地+云端双存储
+version: 1.0.2
 author: MemoryX Team
 homepage: https://github.com/danieljack-OpenClaw/MemoryX
 
@@ -19,11 +19,17 @@ capabilities:
       - search
       - delete
       - context
+      - list
   backup:
     description: 自动备份
     actions:
       - backup
       - restore
+      - sync
+  dashboard:
+    description: Web Dashboard 管理界面
+    url: /memoryx/dashboard
+    port: 19876
 
 config:
   storage_path:
@@ -42,8 +48,17 @@ config:
     type: string
     default: user
     description: 默认记忆层级
+  dashboard_enabled:
+    type: boolean
+    default: true
+    description: 启用 Web Dashboard
+  dashboard_port:
+    type: number
+    default: 19876
+    description: Dashboard 端口
 
 examples:
   - "记住我喜欢蓝色"
   - "搜索颜色偏好"
   - "获取记忆上下文"
+  - "打开 Dashboard"

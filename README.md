@@ -11,43 +11,48 @@
 
 ---
 
-## ⚡ 一键部署
+## ⚡ 部署方式
 
-### OpenClaw 插件 (推荐)
+**两种方式功能完全一致**：独立部署 / OpenClaw 插件
+
+### 方式一：OpenClaw 插件 (推荐)
 
 ```bash
-# 1. 复制插件
+# 复制插件
 cp -r openclaw-plugin/* ~/.openclaw/skills/memoryx/
 
-# 2. 安装依赖
+# 安装依赖
 pip install memoryx
 
-# 3. 重启 OpenClaw
+# 重启
 openclaw restart
 
-# 立即使用
+# 使用
 "记住我喜欢蓝色"
+"打开 Dashboard"  # 启动 Web 管理界面
 ```
 
-### 独立部署
+### 方式二：独立部署
 
 ```bash
 pip install memoryx
 python -m memoryx.dashboard
+# 访问 http://localhost:19876
 ```
 
 ---
 
-## 🎯 核心特性
+## 🎯 核心特性 (两种部署方式功能完全一致)
 
 | 特性 | 说明 |
 |------|------|
 | ⚡ **90% Token 节省** | 无需 LLM |
 | 🔍 **语义搜索** | 83% 准确率 |
 | 🧠 **多层级记忆** | User/Session/Agent/Skill/Project |
-| 💾 **自动备份** | 本地 + 云端 |
-| ☁️ **本地+云端双存储** | 默认本地，可配置云端 |
-| 🎨 **Web Dashboard** | 6 种语言 + 云配置 |
+| 💾 **本地存储** | 默认 (~/.memoryx) |
+| ☁️ **云端存储** | 配置后自动双写 |
+| 🎨 **Web Dashboard** | 完整功能 (独立部署/OpenClaw插件) |
+| 🌍 **多语言** | 6 种语言 |
 
 ---
 
