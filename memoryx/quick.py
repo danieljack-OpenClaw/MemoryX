@@ -93,11 +93,15 @@ def quick_recall(query: str, user_id: str = "xiao_cao_ye") -> dict:
 
 def quick_record(message: str, user_id: str = "xiao_cao_ye") -> dict:
     """快速记录 - 检测关键词"""
-    keywords = ["记住", "请记住", "帮我记住", "我喜欢", "我讨厌", "我的名字", 
+    # 中文关键词
+    cn_keywords = ["记住", "请记住", "帮我记住", "我喜欢", "我讨厌", "我的名字", 
                 "目标", "日均", "月均", "公司", "密码", "地址", "电话"]
+    # 英文关键词
+    en_keywords = ["remember", "remember me", "i like", "i prefer", "i hate", "my name is",
+                  "goal", "target", "password", "address", "phone", "email"]
     
     msg_lower = message.lower()
-    if not any(kw in msg_lower for kw in keywords):
+    if not any(kw in msg_lower for kw in cn_keywords + en_keywords):
         return {"success": False, "recorded": 0}
     
     mx = _get_memoryx()
